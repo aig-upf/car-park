@@ -1611,8 +1611,6 @@ th_vec[training_weekdays_isfull]
 
 
 # In[137]:
-
-
 def plot_model_tn(loc_ar=.3, scale_ar=.05, loc_de=.8, scale_de=.1):
     # arrivals
     a_ar = -loc_ar/scale_ar
