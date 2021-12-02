@@ -1452,8 +1452,7 @@ def model_weekdays_tn(params):
     scale_ar = params[1]
     loc_de = params[2]
     scale_de = params[3]
- 
-    
+
      # arrivals
     #a_ar = -loc_ar/scale_ar
     #b_ar = (1-loc_ar)/scale_ar
