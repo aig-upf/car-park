@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # In[1]:
@@ -23,10 +23,9 @@ df_column_name=['Parking Vilanova Renfe','Parking Sant Sadurní Renfe','Parking 
                 'Parking Martorell FGC','Parking Mollet Renfe','Parking Sant Quirze FGC',
                'Parking Prat del Ll.']
 current_parking_ix=0
-# parkings which fill up: 3 QuatreCamins, 7 Mollet, 1 SantSadurni (sometimes),
 # problems on Weekend with 2 SantBoi, 4 Cerdanyola, 
 # bad data: 6 Martorell, 8 SantQuirze DO NOT USE
-#good 0 Vilanova, 1 SantSadurni, 3 QuatreCamins, 5 Granollers, 7 Mollet, 9 PratDelLlobregat 
+#good 0 Vilanova, 1 SantSadurni, 4 QuatreCamins, 5 Granollers, 7 Mollet, 9 PratDelLlobregat 
 current_parking = available_parkings[current_parking_ix]
 current_column_name=df_column_name[current_parking_ix]
 df = pd.read_csv('data/'+current_parking+"_Estable.csv", delimiter=";")
@@ -100,10 +99,10 @@ y_occ=df['Occupancy']
 #only optimized for Vilanova and QuatreCamins
 
 if current_parking == "QuatreCamins":
-    days_list = ['2020-01-01', '2020-01-06', '2020-01-18', '2020-01-19', '2020-01-26', '2020-02-07', 
-                 '2020-02-08', '2020-02-09', '2020-03-14', '2020-03-15', '2020-03-16', '2020-03-17', '2020-03-18', 
-                 '2020-03-19', '2020-03-20', '2020-03-21', '2020-03-22', '2020-03-23', '2020-03-24', '2020-03-25', 
-                 '2020-03-26', '2020-03-27', '2020-03-28', '2020-03-29', '2020-03-30']
+    days_list = ['2020-01-01', '2020-01-06', '2020-01-18', '2020-01-19', '2020-01-26', '2020-02-07', '2020-02-08', 
+                 '2020-02-09', '2020-03-14', '2020-03-15', '2020-03-16', '2020-03-17', '2020-03-18', '2020-03-19', 
+                 '2020-03-20', '2020-03-21', '2020-03-22', '2020-03-23', '2020-03-24', '2020-03-25', '2020-03-26', 
+                 '2020-03-27', '2020-03-28', '2020-03-29', '2020-03-30']
 elif current_parking == "Cerdanyola":  
     days_list = ['2020-01-01', '2020-01-02', '2020-01-03', '2020-01-04', '2020-01-05', '2020-01-06', '2020-01-11',
                  '2020-01-12', '2020-01-18', '2020-01-19', '2020-01-25', '2020-01-26', 
@@ -164,14 +163,15 @@ from itertools import compress
 from matplotlib.ticker import (AutoMinorLocator, MultipleLocator)
 
 
-# In[8]:
+# In[132]:
 
 
-fig, ax = plt.subplots(3,1,figsize=(15,15))
+fsize=16
+fig, ax = plt.subplots(3,1,figsize=(12,16))
 
 #fig, ax = plt.subplots(1,3)
 
-fig.suptitle('Raw data - '+current_parking, fontsize=24)
+ax[0].set_title('Raw data - '+current_parking, fontsize=fsize)
 #plt.subplot(3,1,1)
 indxJan=x_date<pd.to_datetime("2020-02-01")
 
@@ -180,19 +180,18 @@ ax[0].plot(x_date[indxJan],y_occ[indxJan], label='Occupation')
 ax[0].grid(which='major',linestyle='dotted')
 ax[0].xaxis.set_minor_locator(AutoMinorLocator(4))
 ax[0].grid(which='minor', linestyle=':')
+#ax[0].set_ylabel('Occupancy', fontsize = fsize)
 
 td_days_list=pd.to_datetime(days_list)
 index_dates=td_days_list<pd.to_datetime("2020-02-01")
 
 days_list01=list(compress(days_list, index_dates))
-bol_once=True
+
 for datestr in days_list01:
     initDate= pd.to_datetime(datestr)
     finDate=pd.to_datetime(datestr +' 23:59:00')
     ax[0].axvspan(initDate,finDate, facecolor='grey', alpha=0.2, label='Filtered days', zorder=4)
-    if bol_once:
-        ax[0].legend(fontsize=16)
-        bol_once=False
+
     
 #plt.subplot(3,1,2)
 indxFeb=((x_date<pd.to_datetime("2020-03-01")) & (x_date>=pd.to_datetime("2020-02-01")))
@@ -201,6 +200,7 @@ ax[1].plot(x_date[indxFeb],y_occ[indxFeb])
 ax[1].grid(which='major',linestyle='dotted')
 ax[1].xaxis.set_minor_locator(AutoMinorLocator(4))
 ax[1].grid(which='minor', linestyle=':')
+ax[1].set_ylabel('Occupancy', fontsize = fsize)
 
 index_dates=(td_days_list<pd.to_datetime("2020-03-01")) & (td_days_list>pd.to_datetime("2020-01-31"))
 days_list02=list(compress(days_list, index_dates))
@@ -208,23 +208,33 @@ for datestr in days_list02:
     initDate= pd.to_datetime(datestr)
     finDate=pd.to_datetime(datestr +' 23:59:00')
     ax[1].axvspan(initDate,finDate, facecolor='grey', alpha=0.2, label='Filtered days', zorder=4)
-    
 
-#plt.subplot(3,1,3)
+temp_ticks=ax[1].get_xticks(minor=False)    
+ax[1].set_xticks(temp_ticks[:-1], minor=False)    
+
 indxMar=((x_date<pd.to_datetime("2020-04-01")) & (x_date>=pd.to_datetime("2020-03-01")))
 
-ax[2].plot(x_date[indxMar],y_occ[indxMar]);
+ax[2].plot(x_date[indxMar],y_occ[indxMar], label='Occupation');
 ax[2].grid(which='major',linestyle='dotted')
-ax[2].xaxis.set_minor_locator(AutoMinorLocator(1))
+ax[2].xaxis.set_minor_locator(AutoMinorLocator(4))
 ax[2].grid(which='minor', linestyle=':')
            
 index_dates=(td_days_list<pd.to_datetime("2020-04-01")) & (td_days_list>pd.to_datetime("2020-02-29"))
 days_list03=list(compress(days_list, index_dates))
+bol_once=True
 for datestr in days_list03:
     initDate= pd.to_datetime(datestr)
     finDate=pd.to_datetime(datestr +' 23:59:00')
     ax[2].axvspan(initDate,finDate, facecolor='grey', alpha=0.2, label='Filtered days', zorder=4)
-    
+    if bol_once:
+        ax[2].legend(fontsize=fsize)
+        bol_once=False   
+temp_ticks=ax[2].get_xticks(minor=False)    
+ax[2].set_xticks(temp_ticks[1:], minor=False); 
+ax[2].set_xlabel('Date', fontsize = fsize)
+#ax[2].set_ylabel('Occupancy', fontsize = fsize)
+
+fig.savefig('RawData_'+current_parking+'.pdf',bbox_inches='tight')
 
 
 # In[9]:
@@ -353,7 +363,7 @@ df_hours['hour'] = df_hours['ABS_Hour'].map(lambda x: (int(2*x))/2)
 
 # # Normalization
 
-# In[29]:
+# In[16]:
 
 
 def Area_by_date(date):
@@ -364,46 +374,25 @@ def Area_by_date(date):
 
 df_hours['Area'] = df_hours['Date'].apply(lambda x: Area_by_date(x))
 
-
-def Max_by_date(date):
-    df_day = df[(df['Date'] == date)]
-    Profile = df_day['Occupancy'].values
-    MaxV = max(Profile)
-    return MaxV
-
-df_hours['MaxV'] = df_hours['Date'].apply(lambda x: Max_by_date(x))
-
 def df_normalization(occ, area):
     if area == 0:
         return 'error'
     return occ/area
 
-df_hours['Normalized_occupancy'] = df_hours.apply(lambda x: df_normalization(x.Occupancy, x.MaxV), axis=1)
+df_hours['Normalized_occupancy'] = df_hours.apply(lambda x: df_normalization(x.Occupancy, x.Area), axis=1)
 
 #df_hours = df_hours.drop(['Occupancy'], axis=1)
 #df_hours['Occupancy'] = df_hours['Normalized_occupancy'].apply(lambda x: x)
 df_mean_slots = df_hours.groupby(by=['Weekday','hour'], axis = 0, group_keys=True).mean()
 
 
-# In[30]:
-
-
-df_hours
-
-
-# In[26]:
-
-
-#pd.set_option('display.max_rows',10)
-
-
-# In[31]:
+# In[17]:
 
 
 mean_occupancy = df_mean_slots['Occupancy']
 
 
-# In[32]:
+# In[18]:
 
 
 Monday_occ = mean_occupancy['Monday']
@@ -415,7 +404,7 @@ Saturday_occ = mean_occupancy['Saturday']
 Sunday_occ = mean_occupancy['Sunday']
 
 
-# In[33]:
+# In[19]:
 
 
 fig = plt.figure(figsize = (20,5))
@@ -455,7 +444,7 @@ plt.grid()
 
 # ## Variance computation
 
-# In[34]:
+# In[20]:
 
 
 def mean_day(Weekday,date):
@@ -491,7 +480,7 @@ def compute_mean_variance(aux_dict):
 
 # ### Visualize days
 
-# In[36]:
+# In[21]:
 
 
 Weekday = 'Monday'
@@ -517,7 +506,7 @@ for ii in np.arange(len(dates_options)):
     accumulated_date.append(day)
     accumulated_free_slots.append(Day)
     plt.plot(Day,label=day)
-    #print(len(Day.values))
+    print(len(Day.values))
     
 label_tag = Weekday + ' mean'
 plt.title('Monday occupancy in '+current_parking, fontsize=24)
@@ -528,54 +517,14 @@ plt.legend(fontsize=14)
 plt.xticks(fontsize=16)
 plt.yticks(fontsize=16)
 plt.ylabel('Occupancy', fontsize=18)
-plt.xlabel('Time [h], 0.5 step ', fontsize=18);
-
-
-# In[37]:
-
-
-Weekday = 'Friday'
-Day_df = df_hours[(df_hours['Weekday'] == Weekday)]
-dates = Day_df['Date']
-dates_options = set(dates[:][:])
-dates_options = list(dates_options)
-lockdown_dates=[];
-#lockdown_dates.append('06/01/2020')
-# lockdown_dates.append('16/01/2020')
-# lockdown_dates.append('30/01/2020')
-# lockdown_dates.append('23/01/2020')
-
-fig = plt.figure(figsize = (20,7))
-accumulated_free_slots=[];
-accumulated_date=[];
-
-for ii in np.arange(len(dates_options)):
-    day = dates_options[ii]
-    Day = mean_day(Weekday,day)
-    aux_vec=np.zeros(24)
-    Day_list = list(Day)
-    accumulated_date.append(day)
-    accumulated_free_slots.append(Day)
-    plt.plot(Day,label=day)
-    #print(len(Day.values))
-    
-label_tag = Weekday + ' mean'
-plt.title(Weekday +'occupancy in '+current_parking, fontsize=24)
-plt.plot(Friday_occ,'--', color='black', label = label_tag, linewidth=3)
-plt.axis([0, 24, axis_ylim_low, axis_ylim])
-plt.grid(linestyle='dotted')
-plt.legend(fontsize=14)
-plt.xticks(fontsize=16)
-plt.yticks(fontsize=16)
-plt.ylabel('Occupancy', fontsize=18)
-plt.xlabel('Time [h], 0.5 step ', fontsize=18);
+plt.xlabel('Time [h], 0.5 step ', fontsize=18)
 
 
 # # PREDICTION 
 
 # ### Prepare the data for the prediction
 
-# In[38]:
+# In[22]:
 
 
 def classify_2_proto(x):
@@ -628,7 +577,7 @@ def split_data(df, n_test_weeks, limit_date = None, from_end=True):
     return training_df, test_df
 
 
-# In[39]:
+# In[23]:
 
 
 df_byhour['MonthNumber']= df_byhour['Date'].apply(lambda x: x.split('-')[1])
@@ -639,7 +588,7 @@ df_prediction_mean['Profile_3'] = df_prediction_mean['Weekday'].apply(lambda x: 
 
 # ### Split data in Training/Testing df
 
-# In[40]:
+# In[24]:
 
 
 number_of_testing_weeks = 3
@@ -651,7 +600,7 @@ df_testing.head()
 
 # ## PREDICTION BY MEAN
 
-# In[41]:
+# In[25]:
 
 
 def mean_day_profile(Profile, df_aux):
@@ -703,17 +652,7 @@ def get_days_of_protos(proto_name, df_):
     return days
 
 
-def get_parkingfull_of_protos(proto_name, df_):
-    data_temp = df_[df_['Profile_3'] == proto_name] 
-    isfull = []
-    for i in range(0,data_temp.shape[0], 48):
-        intervallIsfull = data_temp['Free slots'][i:i+48]==0
-        if len(intervallIsfull) == 48:
-            isfull.append(max(intervallIsfull))
-    return isfull
-
-
-# In[42]:
+# In[26]:
 
 
 # ------------------------ NEW TESTING DATA -----------------------------
@@ -736,7 +675,7 @@ testing_saturdays_dates  = get_dates("Saturday", df_testing)
 testing_sundays_dates    = get_dates("Sunday", df_testing)
 
 
-# In[43]:
+# In[27]:
 
 
 # ------------------------ TESTING DATA -----------------------------
@@ -754,7 +693,7 @@ real_sunday = mean_of_day('Sunday','2020-03-08')
 
 # ### 3 Prototypes: Weekday, Friday & Weekend
 
-# In[44]:
+# In[28]:
 
 
 def mean_day_profile_3(Profile, df_aux):
@@ -765,7 +704,7 @@ def mean_day_profile_3(Profile, df_aux):
     return profile
 
 
-# In[45]:
+# In[29]:
 
 
 # Obtain the 3 protoypes. IMPORTANT! We assume all the data in df is valid, robust and correct
@@ -810,7 +749,7 @@ def predict_real_time(day, current_hour, current_value, max_capacity, pred_type)
     return prediction
 
 
-# In[46]:
+# In[30]:
 
 
 hist_weekday_proto, hist_friday_proto, hist_weekend_proto = train_statistical_model(df_train_data)
@@ -819,12 +758,12 @@ prediction = predict_full_day_statistical('Monday')
 
 # #### Plotting  prototypes
 
-# In[47]:
+# In[31]:
 
 
 Weekday_proto = mean_day_profile_3('Weekday',df_train_data)
 Weekend_proto = mean_day_profile_3('Weekend',df_train_data)
-df_fri = df_train_data #.drop(df_train_data[df_train_data['Date'] == '2020-02-07' ].index)
+df_fri = df_train_data.drop(df_train_data[df_train_data['Date'] == '2020-02-07' ].index)
 Friday_proto = mean_day_profile_3('Friday',df_fri)
 
 fig, ax = plt.subplots(1,3)
@@ -865,12 +804,12 @@ ax[2].legend(fontsize=16);
 # fig.tight_layout(pad=3.0)
 
 
-# In[33]:
+# In[32]:
 
 
 Weekday_proto = mean_day_profile_3('Weekday',df_train_data)
 Weekend_proto = mean_day_profile_3('Weekend',df_train_data)
-df_fri = df_train_data #.drop(df_train_data[df_train_data['Date'] == '2020-02-07' ].index)
+df_fri = df_train_data.drop(df_train_data[df_train_data['Date'] == '2020-02-07' ].index)
 Friday_proto = mean_day_profile_3('Friday',df_fri)
 
 fig, ax = plt.subplots(1,3)
@@ -905,7 +844,7 @@ ax[2].legend(fontsize=16);
 # fig.tight_layout(pad=3.0)
 
 
-# In[48]:
+# In[33]:
 
 
 def subplot_training(fig, ax, xx, yy, proto_data, test_days, day, proto_name): 
@@ -919,7 +858,7 @@ def subplot_training(fig, ax, xx, yy, proto_data, test_days, day, proto_name):
     ax[xx,yy].set_ylabel('Occupancy', fontsize=16)
 
 
-# In[49]:
+# In[34]:
 
 
 fig, ax = plt.subplots(3, 3)
@@ -942,7 +881,7 @@ ax[1,2].set_ylim(0,axis_ylim_we)
 fig.tight_layout(pad=5)
 
 
-# In[50]:
+# In[35]:
 
 
 fig = plt.figure(figsize=(17,11))
@@ -961,7 +900,7 @@ plt.xticks(fontsize=16);
 
 # #### Computing errors for 3 prototypes
 
-# In[51]:
+# In[36]:
 
 
 def compute_testing_prop_error(testing_days, proto_data):
@@ -984,7 +923,7 @@ error_saturday_stat = compute_testing_prop_error(testing_saturdays, Weekend_prot
 error_sunday_stat = compute_testing_prop_error(testing_sundays, Weekend_proto.values)
 
 
-# In[52]:
+# In[37]:
 
 
 def subplotStatErr(fig, ax, axx, axy, x, error, mean, title, day ):
@@ -1060,7 +999,7 @@ print(np.std(error_saturday_stat))
 print(np.std(error_sunday_stat))
 
 
-# In[53]:
+# In[38]:
 
 
 fig = plt.figure(figsize=(12,4))
@@ -1076,7 +1015,7 @@ plt.ylim([0,1.1*max(error_tuesday_stat)]);
 
 # ## NORMALIZATION
 
-# In[64]:
+# In[39]:
 
 
 def Area_by_date(date):
@@ -1085,13 +1024,6 @@ def Area_by_date(date):
     day_occ = df_day['Occupancy_mod'].values
     Area = integrate.simps(day_occ)
     return Area
-
-def Max_by_date(date):
-    df = df_prediction_mean
-    df_day = df[(df['Date'] == date)]
-    day_occ = df_day['Occupancy_mod'].values
-    MaxV = max(day_occ)
-    return MaxV
 
 
 def df_normalization(occ, area):
@@ -1116,33 +1048,18 @@ weekend_offset = df_mean_offset.iloc[2]['Min_value']
 df_prediction_mean['Occupancy_mod'] = df_prediction_mean['Occupancy'] - df_prediction_mean['Min_value']
 
 
-# In[62]:
-
-
-df_prediction_mean
-
-
-# In[66]:
+# In[40]:
 
 
 df_prediction_mean['Area'] = df_prediction_mean['Date'].apply(lambda x: Area_by_date(x))
-df_prediction_mean['MaxV'] = df_prediction_mean['Date'].apply(lambda x: Max_by_date(x))
-df_prediction_mean['Normalized_occupancy'] = df_prediction_mean.apply(lambda x: df_normalization(x.Occupancy_mod, x.MaxV), axis=1)
-df_normalized = df_prediction_mean[['Date', 'hour','MonthNumber', 
-                                    'Normalized_occupancy', 'Weekday', 'Profile_3', 
-                                    'Occupancy_mod', 'Area', 'MaxV', 'Occupancy','Free slots']].copy()
+df_prediction_mean['Normalized_occupancy'] = df_prediction_mean.apply(lambda x: df_normalization(x.Occupancy_mod, x.Area), axis=1)
+df_normalized = df_prediction_mean[['Date', 'hour','MonthNumber', 'Normalized_occupancy', 'Weekday', 'Profile_3', 'Occupancy_mod', 'Area', 'Occupancy']].copy()
 
 
 df_normalized
 
 
-# In[42]:
-
-
-#df_normalized['Free slots'].plot.hist(bins=161)
-
-
-# In[67]:
+# In[41]:
 
 
 starting_plot = df_normalized[df_normalized['Date']=='2020-02-10'].index[0]
@@ -1166,7 +1083,7 @@ plt.grid(linestyle='dotted')
 plt.legend(fontsize=16);
 
 
-# In[68]:
+# In[42]:
 
 
 def split_data(df, n_test_weeks, limit_date = None, from_end=True): 
@@ -1196,26 +1113,26 @@ def split_data(df, n_test_weeks, limit_date = None, from_end=True):
     return training_df, test_df
 
 
-# In[69]:
+# In[43]:
 
 
 df_training, df_testing = split_data(df_normalized, 3)
 
 
-# In[70]:
+# In[44]:
 
 
 #pd.set_option('display.max_rows', None)
 #df_testing.sort_values(by='Area', ascending=True)
 
 
-# In[71]:
+# In[45]:
 
 
 #pd.set_option('display.max_rows', 5)
 
 
-# In[209]:
+# In[46]:
 
 
 df_training['Area'] = df_training['Date'].apply(lambda x: Area_by_date(x))
@@ -1228,23 +1145,14 @@ friday_area = df_mean_areas.iloc[0]['Area']
 weekday_area = df_mean_areas.iloc[1]['Area']
 weekend_area = df_mean_areas.iloc[2]['Area']
 
-friday_max = df_mean_areas.iloc[0]['MaxV']
-weekday_max = df_mean_areas.iloc[1]['MaxV']
-weekend_max = df_mean_areas.iloc[2]['MaxV']
-
 print('Weekday area: ' , weekday_area)
 print('Friday area: ' , friday_area)
 print('Weekend area: ' , weekend_area)
 
-print('Weekday maximum: ' , weekday_max)
-print('Friday maximum: ' , friday_max)
-print('Weekend maximum: ' , weekend_max)
-
-
 # df_normalized
 
 
-# In[73]:
+# In[47]:
 
 
 def get_days_normalized(dayname, df_):
@@ -1267,7 +1175,7 @@ def get_days_of_protos_normalized(proto_name, df_):
     return days
 
 
-# In[74]:
+# In[48]:
 
 
 # ------------------------ NEW TESTING DATA -----------------------------
@@ -1289,7 +1197,7 @@ testing_saturdays  = get_days("Saturday", df_testing)
 testing_sundays    = get_days("Sunday", df_testing)
 
 
-# In[105]:
+# In[49]:
 
 
 training_weekdays_norm  = get_days_of_protos_normalized("Weekday", df_training)
@@ -1299,7 +1207,7 @@ training_weekends_norm  = get_days_of_protos_normalized("Weekend", df_training)
 #     plt.plot(time,training_weekdays_norm[ii])
 
 
-# In[76]:
+# In[50]:
 
 
 pd.set_option("max_rows", None)
@@ -1307,7 +1215,7 @@ df_training[df_training.Weekday=='Sunday']
 pd.set_option("max_rows", 10)
 
 
-# In[77]:
+# In[51]:
 
 
 def plot_model_tn_pres(loc_ar=.3, scale_ar=.05, loc_de=.8, scale_de=.1):
@@ -1399,7 +1307,7 @@ def plot_model_tn_pres(loc_ar=.3, scale_ar=.05, loc_de=.8, scale_de=.1):
 
 # ## MATHEMATICAL MODEL - CDF Subtraction
 
-# In[132]:
+# In[139]:
 
 
 # ********************************************** WEEKDAY *************************************************************
@@ -1431,9 +1339,7 @@ def tn_cdf(x, loc, scale):
 
 
 training_weekdays_norm  = get_days_of_protos_normalized("Weekday", df_training)
-training_weekdays_isfull  = get_parkingfull_of_protos("Weekday", df_training)
 training_fridays_norm  = get_days_of_protos_normalized("Friday", df_training)
-training_fridays_isfull  = get_parkingfull_of_protos("Friday", df_training)
 training_weekends_norm  = get_days_of_protos_normalized("Weekend", df_training)
 training_weekends_norm = training_weekends_norm[:-1]
 # t = []
@@ -1446,13 +1352,33 @@ wd_length = len(training_weekdays_norm)
 f_length = len(training_fridays_norm)
 we_length = len(training_weekends_norm)
 
+def model_weekdays_tn_args(params, data, errors):
+    # args[0] is data
+    # args[1] is errors
+
+    loc_ar = params[0]
+    scale_ar = params[1]
+    loc_de = params[2]
+    scale_de = params[3]
+       
+    cdf_ar = tn_cdf(time_tn, loc_ar, scale_ar)
+    cdf_de = tn_cdf(time_tn, loc_de, scale_de)
+    res = cdf_ar - cdf_de
+    res_n = res/sum(res)
+
+    for ii in range(0,wd_length):
+        day = data[ii]
+        errors[ii,:] = np.power(res_n - day, 2)
+    return np.sum(errors)
+
 
 def model_weekdays_tn(params): 
     loc_ar = params[0]
     scale_ar = params[1]
     loc_de = params[2]
     scale_de = params[3]
-
+ 
+    
      # arrivals
     #a_ar = -loc_ar/scale_ar
     #b_ar = (1-loc_ar)/scale_ar
@@ -1488,129 +1414,75 @@ def model_weekdays_tn(params):
     error = 0  
     for ii in range(0,wd_length):
         day = training_weekdays_norm[ii]
-        error += mean_squared_error(res_n, day)
-
+        #error += mean_squared_error(res_n, day)
+        error += np.sum(np.power(res_n - day, 2))
     #plot_model_tn_pres(loc_ar, scale_ar, loc_de, scale_de) 
     #print("mua = " + str(loc_ar) + "\tstda  = " + str(scale_ar))
     #print("mus = " + str(loc_de) + "\tstds = " + str(scale_de))
     #print("Err = " + str(error))
     return error
 
-def model_weekdays_tn_th_max(params): 
-    loc_ar = params[0]
-    scale_ar = params[1]
-    loc_de = params[2]
-    scale_de = params[3]
-    thresh=params[4]
 
-    cdf_ar=tn_cdf(time_tn, loc_ar, scale_ar)
-    cdf_de=tn_cdf(time_tn, loc_de, scale_de)
-
-    cdf_ar[cdf_ar>thresh] = thresh
-    cdf_ar = cdf_ar/thresh
-
-    res = cdf_ar - cdf_de
-    res_n = res #/sum(res)
-  
-    error = 0  
-    for ii in range(0,wd_length):
-        day = training_weekdays_norm[ii]
-        error += np.sum(np.power(res_n - day, 2))
-        #error += mean_squared_error(res_n, day)
-    return error
-
-
-def model_weekdays_tn_th_ind_max(params): 
-    loc_ar = params[0]
-    scale_ar = params[1]
-    loc_de = params[2]
-    scale_de = params[3]
- 
-
-    cdf_ar=tn_cdf(time_tn, loc_ar, scale_ar)
-    cdf_de=tn_cdf(time_tn, loc_de, scale_de)
-
-    #cdf_ar_th=cdf_ar
-    #cdf_ar_th[cdf_ar>thresh] = thresh
-    #cdf_ar_th = cdf_ar_th/thresh
-
-    res = cdf_ar - cdf_de
-    res_n = res#/sum(res)
-    
-    #res_th = cdf_ar_th - cdf_de
-    #res_th_n = res_th/sum(res_th)
-  
-    error = 0  
-
-    for ii in range(0,wd_length):
-        day = training_weekdays_norm[ii]
-        dayisFull=training_weekdays_isfull[ii]
-        
-        if dayisFull:
-            thresh=params[4+ii]
-            cdf_ar_th=cdf_ar
-            cdf_ar_th[cdf_ar>thresh] = thresh
-            cdf_ar_th = cdf_ar_th/thresh
-    
-            res_th = cdf_ar_th - cdf_de
-            res_th_n = res_th#/sum(res_th)
-            
-            error += np.sum(np.power(res_th_n - day, 2))
-            # error += mean_squared_error(res_th_n, day)
-        else:
-            error += np.sum(np.power(res_n - day,2))
-            #error += mean_squared_error(res_n, day)           
-    return error
 
 # params order = a1, b1, a2, b2, rescale
 # params order: loc_ar=.3, scale_ar=.05, loc_de=.8, scale_de=.1, rescale
 #parameters = np.array([ 2 , 20, 5, 80, 0.02])
 #parameters_tn = np.array([.3 ,.05,.8,.1])
-#parameters_tn = np.array([.2 ,.05,.7,.1])
-parameters_tn_th = np.array([.2 ,.05,.7,.1,1])
+parameters_tn = np.array([.2 ,.05,.7,.1])
+
 #optimal_params_weekday = minimize(model_weekdays, parameters, method='Nelder-Mead', tol=0.01)
 #optimal_params_weekdaytn = minimize(model_weekdays_tn, parameters_tn, method='Nelder-Mead', tol=0.01)
-#optimal_params_weekdaytn = minimize(model_weekdays_tn, parameters_tn, method='Nelder-Mead',
-#                                    tol=1e-6, options={'disp': T3rue})
-optimal_params_weekdaytn_glo = minimize(model_weekdays_tn_th_max, parameters_tn_th, method='Nelder-Mead',
+optimal_params_weekdaytn = minimize(model_weekdays_tn, parameters_tn, method='Nelder-Mead',
                                     tol=1e-6, options={'disp': True})
-var_glo = optimal_params_weekdaytn_glo.fun/np.size(training_weekdays_norm)
 
-parameters_tn_th_ind = np.array([.2 ,.05,.7,.1] + [.8]*wd_length)
+# with time-dependent mean errors
+errors = np.ones(np.shape(training_weekdays_norm))
+optimal_params_weekdaytn = minimize(model_weekdays_tn_args,
+                                    parameters_tn, 
+                                    (training_weekdays_norm, errors),
+                                     method='Nelder-Mead',
+                                    tol=1e-6, options={'disp': True})
 
-optimal_params_weekdaytn = minimize(model_weekdays_tn_th_ind_max, parameters_tn_th_ind, method='Nelder-Mead',
-                                    tol=1e-6, options={'disp': True, 'maxfev': 100000})
-var = optimal_params_weekdaytn.fun/np.size(training_weekdays_norm)
-
-
-
-# In[133]:
-
-
-optimal_params_weekdaytn_glo
+# In[140]:
 
 
-# In[134]:
+var_weekdaytn = optimal_params_weekdaytn.fun/np.size(training_weekdays_norm)
+print(var_weekdaytn)
+
+# using the new function
+var_weekdaytn_time = np.mean(errors,0)
+print('global variance %.5e\n' % np.mean(errors))
+var_30mins = np.mean(errors,0)
+print('variance per time-step')
+for i in var_30mins:
+    print('\t' + str(i))
+
+# In[136]:
+ 
+model_weekdays_tn(optimal_params_weekdaytn.x)
+
+
+
+np.size(training_weekdays_norm)
+
+
+# In[141]:
 
 
 optimal_params_weekdaytn
 
 
-# In[136]:
+# In[53]:
 
 
-th_vec=optimal_params_weekdaytn.x[4:]
-th_vec[training_weekdays_isfull]
+optimal_params_weekdaytn
 
 
-# In[84]:
+# In[109]:
 
 
-#plt.hist(th_vec[training_weekdays_isfull],8)
-
-
-# In[137]:
 def plot_model_tn(loc_ar=.3, scale_ar=.05, loc_de=.8, scale_de=.1):
+    fsize=16
     # arrivals
     a_ar = -loc_ar/scale_ar
     b_ar = (1-loc_ar)/scale_ar
@@ -1625,75 +1497,41 @@ def plot_model_tn(loc_ar=.3, scale_ar=.05, loc_de=.8, scale_de=.1):
     cdf_ar = truncnorm.cdf(time_tn, a_ar, b_ar, loc=loc_ar, scale=scale_ar)
     cdf_de = truncnorm.cdf(time_tn, a_de, b_de, loc=loc_de, scale=scale_de)
 
-    fig, ax = plt.subplots(2)
-    ax[0].plot(time, pdf_ar , '-b')
-    ax[0].plot(time, pdf_de, '-r')
-    ax[0].set_title('pdfs')
+    fig, ax = plt.subplots(2,figsize=(18,10))
+    ax[0].plot(time, pdf_ar/sum(pdf_ar) , '-b',label='pdf TN arrival')
+    ax[0].plot(time, pdf_de/sum(pdf_de), '-r',label='pdf TN departure')
+    ax[0].set_title('pdfs', fontsize=fsize)
+    ax[0].legend(fontsize=fsize, loc="upper right");
+    ax[0].set_ylabel('probability', fontsize = fsize)
+    ax[0].grid(which='major',linestyle='dotted')
+    ax[0].set_xlim([0,23.5])
+    
+    ax[1].plot(time, cdf_ar , '--b',label='cdf TN arrival')
+    ax[1].plot(time, cdf_de, '--r',label='cdf TN departure')
+    ax[1].plot(time, cdf_ar-cdf_de, 'r',label='model (arrival-departure)')
+    ax[1].set_title('cdfs', fontsize=fsize)
+    ax[1].legend(fontsize=fsize, loc="upper left")
+    ax[1].grid(which='major',linestyle='dotted')
+    ax[1].set_xlim([0,23.5])
+    ax[1].set_xlabel('hour', fontsize = fsize)
+    ax[1].set_ylabel('porp. of cars', fontsize = fsize)
+    fig.savefig('Model_'+current_parking+'.pdf',bbox_inches='tight');
 
-    ax[1].plot(time, cdf_ar , '--b')
-    ax[1].plot(time, cdf_de, '--r')
-    ax[1].plot(time, cdf_ar-cdf_de, 'r')
-    ax[1].set_title('cdfs')
 
-
-# In[138]:
+# In[110]:
 
 
 plot_model_tn(optimal_params_weekdaytn.x[0],optimal_params_weekdaytn.x[1],optimal_params_weekdaytn.x[2],optimal_params_weekdaytn.x[3])
 
 
-# In[139]:
-
-
-def plot_model_tn_th(loc_ar=.3, scale_ar=.05, loc_de=.8, scale_de=.1,thresh=.8):
-    # arrivals
-    a_ar = -loc_ar/scale_ar
-    b_ar = (1-loc_ar)/scale_ar
-
-    # departures
-    a_de = -loc_de/scale_de
-    b_de = (1-loc_de)/scale_de
-
-
-    pdf_ar = truncnorm.pdf(time_tn, a_ar, b_ar, loc=loc_ar, scale=scale_ar)
-    pdf_de = truncnorm.pdf(time_tn, a_de, b_de, loc=loc_de, scale=scale_de)
-    cdf_ar = truncnorm.cdf(time_tn, a_ar, b_ar, loc=loc_ar, scale=scale_ar)
-    
-    ix_parking_full= np.argmax(cdf_ar>thresh)
-    pdf_ar[cdf_ar>thresh] =0
-    cdf_ar[cdf_ar>thresh] = thresh
-    cdf_ar = cdf_ar/thresh
-    
-    cdf_de = truncnorm.cdf(time_tn, a_de, b_de, loc=loc_de, scale=scale_de)
-
-    fig, ax = plt.subplots(2)
-    ax[0].plot(time, pdf_ar , '-b')
-    ax[0].plot(time, pdf_de, '-r')
-    ax[0].plot(0.5*ix_parking_full*np.array([1, 1]),[0, max(pdf_ar)],'--')
-    ax[0].set_title('pdfs')
-
-    ax[1].plot(time, cdf_ar , '--b')
-    ax[1].plot(time, cdf_de, '--r')
-    ax[1].plot(time, cdf_ar-cdf_de, 'r')
-    ax[1].plot(0.5*ix_parking_full*np.array([1, 1]),[0,1],'--')
-    ax[1].set_title('cdfs')
-
-
-# In[140]:
-
-
-plot_model_tn_th(optimal_params_weekdaytn.x[0],optimal_params_weekdaytn.x[1],optimal_params_weekdaytn.x[2],
-              optimal_params_weekdaytn.x[3],optimal_params_weekdaytn.x[4])
-
-
-# In[141]:
+# In[56]:
 
 
 weekday_math_params = optimal_params_weekdaytn.x
 weekday_math_params
 
 
-# In[221]:
+# In[57]:
 
 
 time2 = np.linspace(0,23.5,48)
@@ -1705,14 +1543,12 @@ tn2_wd=tn(time_tn, optimal_params_weekdaytn.x[2], optimal_params_weekdaytn.x[3])
 #cdf1_wd_ap = generate_cdf(tn1_wd)
 #cdf2_wd_ap = generate_cdf(tn2_wd)
 cdf1_wd = tn_cdf(time_tn, optimal_params_weekdaytn.x[0], optimal_params_weekdaytn.x[1])
-prototype_math_arr_weekday=cdf1_wd
 cdf2_wd = tn_cdf(time_tn, optimal_params_weekdaytn.x[2], optimal_params_weekdaytn.x[3])
-prototype_math_dep_weekday=cdf2_wd
 #cdf1_wd = generate_cdf(tn1_wd)
 #cdf2_wd = generate_cdf(tn2_wd)
 
 resta_wd = np.array(cdf1_wd) - np.array(cdf2_wd)
-prototype_math_weekday = resta_wd#/sum(resta_wd)
+prototype_math_weekday = resta_wd/sum(resta_wd)
 
 #resta_wd_ap= np.array(cdf1_wd_ap) - np.array(cdf2_wd_ap)
 #prototype_math_weekday_ap = resta_wd_ap/sum(resta_wd_ap)
@@ -1733,48 +1569,7 @@ plt.xticks(fontsize=18)
 plt.legend(fontsize=16, loc="upper left");
 
 
-# In[223]:
-
-
-time2 = np.linspace(0,23.5,48)
-tn1_wd=tn(time_tn, optimal_params_weekdaytn.x[0], optimal_params_weekdaytn.x[1])
-tn2_wd=tn(time_tn, optimal_params_weekdaytn.x[2], optimal_params_weekdaytn.x[3])
-
-cdf1_wd = tn_cdf(time_tn, optimal_params_weekdaytn.x[0], optimal_params_weekdaytn.x[1])
-
-ix_parking_full= np.argmax(cdf1_wd>optimal_params_weekdaytn.x[4])
-tn1_wd[cdf1_wd>optimal_params_weekdaytn.x[4]] =0
-cdf1_wd[cdf1_wd>optimal_params_weekdaytn.x[4]] = optimal_params_weekdaytn.x[4]
-cdf1_wd = cdf1_wd/optimal_params_weekdaytn.x[4]
-
-cdf2_wd = tn_cdf(time_tn, optimal_params_weekdaytn.x[2], optimal_params_weekdaytn.x[3])
-#cdf1_wd = generate_cdf(tn1_wd)
-#cdf2_wd = generate_cdf(tn2_wd)
-
-resta_wd = np.array(cdf1_wd) - np.array(cdf2_wd)
-prototype_math_weekday = resta_wd#/sum(resta_wd)
-
-#resta_wd_ap= np.array(cdf1_wd_ap) - np.array(cdf2_wd_ap)
-#prototype_math_weekday_ap = resta_wd_ap/sum(resta_wd_ap)
-
-fig = plt.figure(figsize=(18,10))
-fig.suptitle("PDF and CDF for arrival and deartures - WEEKDAYS ("+current_parking+")", fontsize=20)
-plt.plot(time2, tn1_wd/sum(tn1_wd), label="Probability that a slot gets occupied")
-plt.plot(time2, tn2_wd/sum(tn2_wd),  label="Probability that a slot gets free")
-plt.plot(time2, cdf1_wd, label="Cummulative probability arrival")
-plt.plot(time2, cdf2_wd, label="Cummulative probability departure")
-plt.plot(0.5*ix_parking_full*np.array([1, 1]),[0,1],'--',label="Parking full")
-#plt.plot(time2, cdf1_wd_ap, label="Cummulative probability arrival approx")
-#plt.plot(time2, cdf2_wd_ap, label="Cummulative probability departure approx")
-plt.grid(linestyle='dotted')
-plt.xlabel("Time [h]", fontsize=18)
-plt.ylabel("PDF & CDF", fontsize=18)
-plt.yticks(fontsize=18)
-plt.xticks(fontsize=18)
-plt.legend(fontsize=16, loc="upper left");
-
-
-# In[225]:
+# In[124]:
 
 
 fig = plt.figure(figsize=(18,10))
@@ -1784,7 +1579,6 @@ plt.xlabel("Time [h]", fontsize=18)
 plt.ylabel("PDF & CDF", fontsize=18)
 plt.yticks(fontsize=18)
 plt.xticks(fontsize=18)
-plt.plot(time2, prototype_math_arr_weekday/optimal_params_weekdaytn.x[4], linewidth=3, color='blue', label="excess")
 plt.plot(time2, prototype_math_weekday, linewidth=3, color='red', label="(CDF1 - CDF2)")
 #plt.plot(time2, prototype_math_weekday_ap, linewidth=3, color='red', label="approx")
 for i in range(0,len(training_weekdays_norm)):
@@ -1793,54 +1587,33 @@ for i in range(0,len(training_weekdays_norm)):
 plt.legend(fontsize=16, loc="upper left");
 
 
-# In[146]:
+# In[125]:
 
 
-tn1_wd=tn(time_tn, optimal_params_weekdaytn.x[0], optimal_params_weekdaytn.x[1])
-tn2_wd=tn(time_tn, optimal_params_weekdaytn.x[2], optimal_params_weekdaytn.x[3])
-
-cdf2_wd = tn_cdf(time_tn, optimal_params_weekdaytn.x[2], optimal_params_weekdaytn.x[3])
-
-for ii in range(0,len(training_weekdays_norm)):
-    idx_th=ii+4
-
-    cdf1_wd = tn_cdf(time_tn, optimal_params_weekdaytn.x[0], optimal_params_weekdaytn.x[1])
-
-
-    dayisFull=training_weekdays_isfull[ii]
-    if dayisFull:
-        print(optimal_params_weekdaytn.x[idx_th])
-    
-        ix_parking_full= np.argmax(cdf1_wd>optimal_params_weekdaytn.x[idx_th])
-        time_parking_full= 0.5*ix_parking_full
-        str_parking_full= f'{int(time_parking_full):02.0f}:{int((time_parking_full-int(time_parking_full))*60):02.0f}h'
-
-        print('Parking full        = '+str_parking_full)
-        tn1_wd[cdf1_wd>optimal_params_weekdaytn.x[idx_th]] =0
-        cdf1_wd[cdf1_wd>optimal_params_weekdaytn.x[idx_th]] = optimal_params_weekdaytn.x[idx_th]
-        cdf1_wd = cdf1_wd/optimal_params_weekdaytn.x[idx_th]
+fsize=18
+fig = plt.figure(figsize=(18,10))
+plt.title("TN model CDF subtraction - WEEKDAYS ("+current_parking+")", fontsize=fsize)
+plt.grid(linestyle='dotted')
+plt.xlabel("Time [h]", fontsize=fsize)
+plt.ylabel("normalized occupation", fontsize=fsize)
+plt.yticks(fontsize=fsize)
+plt.xticks(fontsize=fsize)
+plt.plot(time2, prototype_math_weekday, linewidth=3, color='red', label="model curve")
+#plt.plot(time2, prototype_math_weekday_ap, linewidth=3, color='red', label="approx")
+for i in range(0,len(training_weekdays_norm)):
+    if i==0:
+        plt.plot(time, training_weekdays_norm[i], linewidth=0.5, color='gray', label="trainig curves")
     else:
-        ix_parking_full=0
-    resta_wd = np.array(cdf1_wd) - np.array(cdf2_wd)
-    prototype_math_weekday = resta_wd#/sum(resta_wd)
-    fig = plt.figure(figsize=(18,10))
-    fig.suptitle("Normalized mathematical prototope from CDF subtraction - weekdayS ("+current_parking+")", fontsize=20)
-    if dayisFull:
-        plt.plot(0.5*ix_parking_full*np.array([1, 1]),[0,1],'--',label="Parking full "+str_parking_full)
-    plt.grid(linestyle='dotted')
-    plt.xlabel("Time [h]", fontsize=18)
-    plt.ylabel("PDF & CDF", fontsize=18)
-    plt.yticks(fontsize=18)
-    plt.xticks(fontsize=18)
-    plt.plot(time, prototype_math_weekday, linewidth=3, color='red', label="(CDF1 - CDF2)*Rescale")
-    #for i in range(0,len(training_weekdays_norm)):
-    plt.plot(time, training_weekdays_norm[ii], linewidth=0.45)
-    plt.legend(fontsize=16);
+        plt.plot(time, training_weekdays_norm[i], linewidth=0.5, color='gray')
+
+plt.xlim([0,23.5])
+plt.legend(fontsize=fsize, loc="upper left");
+fig.savefig('Training_'+current_parking+'.pdf',bbox_inches='tight');
 
 
 # ### FRIDAYS
 
-# In[147]:
+# In[59]:
 
 
 def model_fridays_tn(params): 
@@ -1866,98 +1639,6 @@ def model_fridays_tn(params):
         error += mean_squared_error(res_n, day)
     return error
 
-def model_fridays_tn_th_max(params): 
-    loc_ar = params[0]
-    scale_ar = params[1]
-    loc_de = params[2]
-    scale_de = params[3]
-    thresh=params[4]
-
-    cdf_ar=tn_cdf(time_tn, loc_ar, scale_ar)
-    cdf_de=tn_cdf(time_tn, loc_de, scale_de)
-
-    cdf_ar[cdf_ar>thresh] = thresh
-    cdf_ar = cdf_ar/thresh
-
-    res = cdf_ar - cdf_de
-    res_n = res#/sum(res)
-  
-    error = 0  
-    for ii in range(0,f_length):
-        day = training_fridays_norm[ii]
-        error += mean_squared_error(res_n, day)
-    return error
-
-def model_fridays_tn_th_opt_max(params): 
-    loc_ar = params[0]
-    scale_ar = params[1]
-    loc_de = params[2]
-    scale_de = params[3]
-    thresh=params[4]
-
-    cdf_ar=tn_cdf(time_tn, loc_ar, scale_ar)
-    cdf_de=tn_cdf(time_tn, loc_de, scale_de)
-
-    cdf_ar_th=cdf_ar
-    cdf_ar_th[cdf_ar>thresh] = thresh
-    cdf_ar_th = cdf_ar_th/thresh
-
-    res = cdf_ar - cdf_de
-    res_n = res/sum(res)
-    
-    res_th = cdf_ar_th - cdf_de
-    res_th_n = res_th#/sum(res_th)
-  
-    error = 0  
-    for ii in range(0,f_length):
-        day = training_fridays_norm[ii]
-        dayisFull=training_fridays_isfull[ii]
-        #print(dayisFull)
-        if dayisFull:
-            error += mean_squared_error(res_th_n, day)
-        else:
-            error += mean_squared_error(res_n, day)           
-    return error
-
-def model_fridays_tn_th_ind_max(params): 
-    loc_ar = params[0]
-    scale_ar = params[1]
-    loc_de = params[2]
-    scale_de = params[3]
- 
-
-    cdf_ar=tn_cdf(time_tn, loc_ar, scale_ar)
-    cdf_de=tn_cdf(time_tn, loc_de, scale_de)
-
-    #cdf_ar_th=cdf_ar
-    #cdf_ar_th[cdf_ar>thresh] = thresh
-    #cdf_ar_th = cdf_ar_th/thresh
-
-    res = cdf_ar - cdf_de
-    res_n = res#/sum(res)
-    
-    #res_th = cdf_ar_th - cdf_de
-    #res_th_n = res_th/sum(res_th)
-  
-    error = 0  
-
-    for ii in range(0,f_length):
-        day = training_fridays_norm[ii]
-        dayisFull=training_fridays_isfull[ii]
-        
-        if dayisFull:
-            thresh=params[4+ii]
-            cdf_ar_th=cdf_ar
-            cdf_ar_th[cdf_ar>thresh] = thresh
-            cdf_ar_th = cdf_ar_th/thresh
-    
-            res_th = cdf_ar_th - cdf_de
-            res_th_n = res_th#/sum(res_th)
-            
-            error += mean_squared_error(res_th_n, day)
-        else:
-            error += mean_squared_error(res_n, day)           
-    return error
 
 # params order = a1, b1, a2, b2
 #parameters = np.array([ 2 , 20, 5, 80, 0.02])
@@ -1967,31 +1648,18 @@ def model_fridays_tn_th_ind_max(params):
 #parameters_tn = np.array([.3 ,.05,.8,.1])
 #optimal_params_fridaytn = minimize(model_fridays_tn, parameters_tn, method='Nelder-Mead', tol=0.01)
 
-#parameters_tn = np.array([.2 ,.05,.7,.1])
-#optimal_params_fridaytn = minimize(model_fridays_tn, parameters_tn, method='Nelder-Mead',
-#                                    tol=1e-6, options={'disp': True})
-parameters_tn_th = np.array([.2 ,.05,.7,.1,.8])
-optimal_params_fridaytn_glo = minimize(model_fridays_tn_th_opt_max, parameters_tn_th, method='Nelder-Mead',
+parameters_tn = np.array([.2 ,.05,.7,.1])
+optimal_params_fridaytn = minimize(model_fridays_tn, parameters_tn, method='Nelder-Mead',
                                     tol=1e-6, options={'disp': True})
-parameters_tn_th_ind = np.array([.2 ,.05,.7,.1] + [.8]*f_length)
-
-optimal_params_fridaytn = minimize(model_fridays_tn_th_ind_max, parameters_tn_th_ind, method='Nelder-Mead',
-                                    tol=1e-6, options={'disp': True, 'maxfev': 100000})
 
 
-# In[148]:
+# In[60]:
 
 
 optimal_params_fridaytn
 
 
-# In[149]:
-
-
-optimal_params_fridaytn_glo
-
-
-# In[150]:
+# In[61]:
 
 
 #optimal_params_friday.x
@@ -1999,7 +1667,7 @@ optimal_params_fridaytn_glo
 friday_math_params = optimal_params_fridaytn.x
 
 
-# In[151]:
+# In[62]:
 
 
 
@@ -2018,7 +1686,7 @@ cdf2_fri=tn_cdf(time_tn, optimal_params_fridaytn.x[2], optimal_params_fridaytn.x
 resta = np.array(cdf1_fri) - np.array(cdf2_fri)
 prototype_math_friday = resta/sum(resta)
 fig = plt.figure(figsize=(18,10))
-fig.suptitle("PDF and CDF for occupying and freeing a slot - FRIDAYS ("+current_parking+")", fontsize=20)
+fig.suptitle("PDF and CDF for occupying and freeing a slot - WEEKDAYS ("+current_parking+")", fontsize=20)
 plt.plot(time, cdf1_fri, label="CDF Slot occupied")
 plt.plot(time, cdf2_fri, label="CDF Slot free")
 plt.plot(time, tn1_fri/sum(tn1_fri), label="Probability that a slot gets occupied")
@@ -2033,50 +1701,7 @@ plt.legend(fontsize=16, loc="upper left")
 plt.legend(fontsize=16)
 
 
-# In[241]:
-
-
-idx_th=4
-time2 = np.linspace(0,23.5,48)
-tn1_fri=tn(time_tn, optimal_params_fridaytn.x[0], optimal_params_fridaytn.x[1])
-tn2_fri=tn(time_tn, optimal_params_fridaytn.x[2], optimal_params_fridaytn.x[3])
-
-cdf1_fri = tn_cdf(time_tn, optimal_params_fridaytn.x[0], optimal_params_fridaytn.x[1])
-prototype_math_arr_friday=cdf1_fri.copy()
-
-
-ix_parking_full= np.argmax(cdf1_fri>optimal_params_fridaytn.x[idx_th])
-tn1_fri[cdf1_fri>optimal_params_fridaytn.x[idx_th]] =0
-cdf1_fri[cdf1_fri>optimal_params_fridaytn.x[idx_th]] = optimal_params_fridaytn.x[idx_th]
-
-cdf1_fri = cdf1_fri/optimal_params_fridaytn.x[idx_th]
-
-
-cdf2_fri = tn_cdf(time_tn, optimal_params_fridaytn.x[2], optimal_params_fridaytn.x[3])
-prototype_math_dep_friday=cdf2_fri
-
-#cdf1_wd = generate_cdf(tn1_wd)
-#cdf2_wd = generate_cdf(tn2_wd)
-
-resta_fri = np.array(cdf1_fri) - np.array(cdf2_fri)
-prototype_math_friday = resta_fri#/sum(resta_fri)
-
-fig = plt.figure(figsize=(18,10))
-fig.suptitle("PDF and CDF for occupying and freeing a slot - FRIDAYS ("+current_parking+")", fontsize=20)
-plt.plot(time2, cdf1_fri, label="CDF Slot occupied")
-plt.plot(time2, cdf2_fri, label="CDF Slot free")
-plt.plot(time2, tn1_fri/sum(tn1_fri), label="Probability that a slot gets occupied")
-plt.plot(time2, tn2_fri/sum(tn2_fri),  label="Probability that a slot gets free")
-plt.plot(0.5*ix_parking_full*np.array([1, 1]),[0,1],'--',label="Parking full")
-plt.grid(linestyle='dotted')
-plt.xlabel("Time [h]", fontsize=18)
-plt.ylabel("PDF & CDF", fontsize=18)
-plt.yticks(fontsize=18)
-plt.xticks(fontsize=18)
-plt.legend(fontsize=16, loc="upper left");
-
-
-# In[242]:
+# In[126]:
 
 
 fig = plt.figure(figsize=(18,10))
@@ -2086,61 +1711,39 @@ plt.xlabel("Time [h]", fontsize=18)
 plt.ylabel("PDF & CDF", fontsize=18)
 plt.yticks(fontsize=18)
 plt.xticks(fontsize=18)
-plt.plot(time, prototype_math_arr_friday/optimal_params_fridaytn.x[idx_th], linewidth=3, color='blue', label="excess")
 plt.plot(time, prototype_math_friday, linewidth=3, color='red', label="(CDF1 - CDF2)*Rescale")
 for i in range(0,len(training_fridays_norm)):
     plt.plot(time, training_fridays_norm[i], linewidth=0.45)
 plt.legend(fontsize=16);
 
 
-# In[155]:
+# In[127]:
 
 
-tn1_fri=tn(time_tn, optimal_params_fridaytn.x[0], optimal_params_fridaytn.x[1])
-tn2_fri=tn(time_tn, optimal_params_fridaytn.x[2], optimal_params_fridaytn.x[3])
-
-cdf2_fri = tn_cdf(time_tn, optimal_params_fridaytn.x[2], optimal_params_fridaytn.x[3])
-
-for ii in range(0,len(training_fridays_norm)):
-    idx_th=ii+4
-
-    cdf1_fri = tn_cdf(time_tn, optimal_params_fridaytn.x[0], optimal_params_fridaytn.x[1])
-
-
-    dayisFull=training_fridays_isfull[ii]
-    if dayisFull:
-        print(optimal_params_fridaytn.x[idx_th])
-    
-        ix_parking_full= np.argmax(cdf1_fri>optimal_params_fridaytn.x[idx_th])
-        time_parking_full= 0.5*ix_parking_full
-        str_parking_full= f'{int(time_parking_full):02.0f}:{int((time_parking_full-int(time_parking_full))*60):02.0f}h'
-
-        print('Parking full        = '+str_parking_full)
-        tn1_fri[cdf1_fri>optimal_params_fridaytn.x[idx_th]] =0
-        cdf1_fri[cdf1_fri>optimal_params_fridaytn.x[idx_th]] = optimal_params_fridaytn.x[idx_th]
-        cdf1_fri = cdf1_fri/optimal_params_fridaytn.x[idx_th]
+fsize=18
+fig = plt.figure(figsize=(18,10))
+plt.title("TN model CDF subtraction - FRIDAYS ("+current_parking+")", fontsize=fsize)
+plt.grid(linestyle='dotted')
+plt.xlabel("Time [h]", fontsize=fsize)
+plt.ylabel("normalized occupation", fontsize=fsize)
+plt.yticks(fontsize=fsize)
+plt.xticks(fontsize=fsize)
+plt.plot(time2, prototype_math_friday, linewidth=3, color='red', label="model curve")
+#plt.plot(time2, prototype_math_weekday_ap, linewidth=3, color='red', label="approx")
+for i in range(0,len(training_fridays_norm)):
+    if i==0:
+        plt.plot(time, training_fridays_norm[i], linewidth=0.5, color='gray', label="trainig curves")
     else:
-        ix_parking_full=0
-    resta_fri = np.array(cdf1_fri) - np.array(cdf2_fri)
-    prototype_math_friday = resta_fri#/sum(resta_fri)
-    fig = plt.figure(figsize=(18,10))
-    fig.suptitle("Normalized mathematical prototope from CDF subtraction - FRIDAYS ("+current_parking+")", fontsize=20)
-    if dayisFull:
-        plt.plot(0.5*ix_parking_full*np.array([1, 1]),[0,.06],'--',label="Parking full "+str_parking_full)
-    plt.grid(linestyle='dotted')
-    plt.xlabel("Time [h]", fontsize=18)
-    plt.ylabel("PDF & CDF", fontsize=18)
-    plt.yticks(fontsize=18)
-    plt.xticks(fontsize=18)
-    plt.plot(time, prototype_math_friday, linewidth=3, color='red', label="(CDF1 - CDF2)*Rescale")
-    #for i in range(0,len(training_fridays_norm)):
-    plt.plot(time, training_fridays_norm[ii], linewidth=0.45)
-    plt.legend(fontsize=16);
+        plt.plot(time, training_fridays_norm[i], linewidth=0.5, color='gray')
+
+plt.xlim([0,23.5])
+plt.legend(fontsize=fsize, loc="upper left");
+fig.savefig('Training_'+current_parking+'_FRIDAY.pdf',bbox_inches='tight');
 
 
 # ### WEEKENDS
 
-# In[197]:
+# In[64]:
 
 
 training_weekends_norm  = get_days_of_protos_normalized("Weekend", df_training)
@@ -2170,11 +1773,10 @@ def model_weekends_tn(params):
     
     arrival_cdf = tn_cdf(time_tn, loc_ar, scale_ar)
     departure_cdf = tn_cdf(time_tn, loc_de, scale_de)
-    departure_cdf=departure_cdf/max(departure_cdf)
     res =arrival_cdf - departure_cdf
     
     #res = np.array(arrival_cdf) - np.array(departure_cdf)
-    res_n = res#/sum(res)
+    res_n = res/sum(res)
     
     #print(loc_de)
     #print(scale_de)
@@ -2209,10 +1811,10 @@ if ((current_parking == "SantBoi") or (current_parking == "Cerdanyola")):
                                         tol=1e-6, options={'disp': True})
 else:
     optimal_params_weekendtn = minimize(model_weekends_tn, parameters_tn, method='Nelder-Mead',
-                                        tol=1e-6, options={'disp': True, 'maxfev': 100000})  
+                                        tol=1e-6, options={'disp': True})  
 
 
-# In[198]:
+# In[65]:
 
 
 #weekend_math_params = optimal_params_weekend.x
@@ -2221,7 +1823,7 @@ weekend_math_params = optimal_params_weekendtn.x
 optimal_params_weekendtn.x
 
 
-# In[201]:
+# In[66]:
 
 
 #tn1_we = gam(time, optimal_params_weekend.x[0], optimal_params_weekend.x[1])
@@ -2235,13 +1837,11 @@ tn2_we=tn(time_tn, optimal_params_weekendtn.x[2], optimal_params_weekendtn.x[3])
 #cdf2_we = generate_cdf(tn2_we)
 cdf1_we = tn_cdf(time_tn, optimal_params_weekendtn.x[0], optimal_params_weekendtn.x[1])
 cdf2_we = tn_cdf(time_tn, optimal_params_weekendtn.x[2], optimal_params_weekendtn.x[3])
-cdf2_we=cdf2_we/max(cdf2_we)
-print(max(cdf1_we))
 
-print(max(cdf2_we))
+
 
 resta_we = np.array(cdf1_we) - np.array(cdf2_we)
-prototype_math_weekend = resta_we#/sum(resta_we)
+prototype_math_weekend = resta_we/sum(resta_we)
 fig = plt.figure(figsize=(18,10))
 fig.suptitle("PDF and CDF for occupying and freeing a slot - WEEKENDS ("+current_parking+")", fontsize=20)
 plt.plot(time, cdf1_we, label="CDF Slot occupied")
@@ -2255,10 +1855,10 @@ plt.yticks(fontsize=18)
 plt.xticks(fontsize=18)
 plt.legend(fontsize=16, loc="upper left")
 
-plt.legend(fontsize=16);
+plt.legend(fontsize=16)
 
 
-# In[202]:
+# In[128]:
 
 
 fig = plt.figure(figsize=(18,10))
@@ -2271,26 +1871,74 @@ plt.xticks(fontsize=18)
 plt.plot(time, prototype_math_weekend, linewidth=3, color='red', label="(CDF1 - CDF2)*Rescale")
 for i in range(0,len(training_weekends_norm)):
     plt.plot(time, training_weekends_norm[i], linewidth=0.45)
-plt.legend(fontsize=16)
+plt.legend(fontsize=16);
 
 
-# In[244]:
+# In[129]:
+
+
+fsize=18
+fig = plt.figure(figsize=(18,10))
+plt.title("TN model CDF subtraction - WEEKENDS ("+current_parking+")", fontsize=fsize)
+plt.grid(linestyle='dotted')
+plt.xlabel("Time [h]", fontsize=fsize)
+plt.ylabel("normalized occupation", fontsize=fsize)
+plt.yticks(fontsize=fsize)
+plt.xticks(fontsize=fsize)
+plt.plot(time2, prototype_math_weekend, linewidth=3, color='red', label="model curve")
+#plt.plot(time2, prototype_math_weekday_ap, linewidth=3, color='red', label="approx")
+for i in range(0,len(training_fridays_norm)):
+    if i==0:
+        plt.plot(time, training_weekends_norm[i], linewidth=0.5, color='gray', label="trainig curves")
+    else:
+        plt.plot(time, training_weekends_norm[i], linewidth=0.5, color='gray')
+
+plt.xlim([0,23.5])
+plt.legend(fontsize=fsize, loc="upper left");
+fig.savefig('Training_'+current_parking+'WEEKEND.pdf',bbox_inches='tight');
+
+
+# In[130]:
+
+
+def printTimes(params,timeString='WEEKDAYS'):
+    print("--------- "+timeString +" "+current_parking+" -----------")
+    loc_ar = params[0]*24
+    scale_ar = params[1]*24
+    loc_de = params[2]*24
+    scale_de = params[3]*24
+
+    print(f'Mean Arrival Time   = {int(loc_ar):02.0f}:{int((loc_ar-int(loc_ar))*60):02.0f}h')
+    print(f'stdv Arrival        = {int(scale_ar):2.0f}:{int((scale_ar-int(scale_ar))*60):02.0f}h')
+    print(f'Mean Departure Time = {int(loc_de):02.0f}:{int((loc_de-int(loc_de))*60):02.0f}h')
+    print(f'stdv Departure      = {int(scale_de):2.0f}:{int((scale_de-int(scale_de))*60):02.0f}h')
+    if len(params)>4:
+        thresh=params[4]
+        if thresh<1:
+            cdf_ar = tn_cdf(time_tn, loc_ar/24, scale_ar/24)
+            time_parking_full= 0.5*np.argmax(cdf_ar>thresh)
+            print(f'Parking full        = {int(time_parking_full):02.0f}:{int((time_parking_full-int(time_parking_full))*60):02.0f}h')
+
+
+# In[131]:
+
+
+printTimes(optimal_params_weekdaytn.x,'WEEKDAYS')
+printTimes(optimal_params_fridaytn.x,'FRIDAYS')
+printTimes(optimal_params_weekendtn.x,'WEEKENDS')
+
+
+# In[68]:
 
 
 tn_weekday_n = prototype_math_weekday
 tn_friday_n = prototype_math_friday
 tn1_weekend_n = prototype_math_weekend
 
-tn_arr_weekday_n = prototype_math_arr_weekday
-tn_dep_weekday_n = prototype_math_dep_weekday
-tn_arr_friday_n = prototype_math_arr_friday
-tn_dep_friday_n = prototype_math_dep_friday
+
+# In[69]:
 
 
-# In[204]:
-
-
-ymax=1.05
 fig, ax = plt.subplots(1,3)
 fig.set_figwidth(20)
 fig.set_figheight(4)
@@ -2299,7 +1947,7 @@ fig.suptitle('Decomoposition for each prototype [TN Probability Normalized] - ' 
 # for ii in range(len(training_weekdays_norm)):
 #     ax[0].plot(time,training_weekdays_norm[ii], linewidth='0.5')
 ax[0].plot(time2, tn_weekday_n, linewidth=2, color= 'green', label='Mathematical Weekday fit')
-ax[0].set_ylim([0,ymax])
+ax[0].set_ylim([0,0.06])
 ax[0].grid(linestyle='dotted')
 ax[0].legend(fontsize=8)
 ax[0].set_xlabel('Time (hour)')
@@ -2308,7 +1956,7 @@ ax[0].set_ylabel('Probability')
 # for ii in range(len(training_fridays_norm)):
 #     ax[1].plot(time,training_fridays_norm[ii], linewidth='0.5')
 ax[1].plot(time2, tn_friday_n, linewidth=2, color= 'green', label='Mathematical Friday fit')
-ax[1].set_ylim([0,ymax])
+ax[1].set_ylim([0,0.06])
 ax[1].grid(linestyle='dotted')
 ax[1].legend(fontsize=9)
 ax[1].set_xlabel('Time (hour)')
@@ -2317,14 +1965,14 @@ ax[1].set_ylabel('Probability')
 # for ii in range(len(training_weekends_norm)):
 #      ax[2].plot(time,training_weekends_norm[ii], linewidth='0.5')
 ax[2].plot(time2, tn1_weekend_n, linewidth=2, color='green', label='Mathematical Weekend wave')
-ax[2].set_ylim([0,ymax])
+ax[2].set_ylim([0,0.06])
 ax[2].grid(linestyle='dotted')
 ax[2].legend()
 ax[2].set_xlabel('Time (hour)')
 ax[2].set_ylabel('Probability');
 
 
-# In[205]:
+# In[70]:
 
 
 fig, ax = plt.subplots(1,3)
@@ -2335,7 +1983,7 @@ fig.suptitle('Decomoposition for each prototype [TN Probability Normalized] - ' 
 # for ii in range(len(training_weekdays_norm)):
 #     ax[0].plot(time,training_weekdays_norm[ii], linewidth='0.5')
 ax[0].plot(time, tn_weekday_n, linewidth=2, color= 'green', label='Mathematical Weekday fit')
-ax[0].set_ylim([0,ymax])
+ax[0].set_ylim([0,0.07])
 ax[0].grid(linestyle='dotted')
 ax[0].legend(fontsize=8)
 ax[0].set_xlabel('Time (hour)')
@@ -2344,7 +1992,7 @@ ax[0].set_ylabel('Probability')
 # for ii in range(len(training_fridays_norm)):
 #     ax[1].plot(time,training_fridays_norm[ii], linewidth='0.5')
 ax[1].plot(time, tn_friday_n, linewidth=2, color= 'green', label='Mathematical Friday fit')
-ax[1].set_ylim([0,ymax])
+ax[1].set_ylim([0,0.07])
 ax[1].grid(linestyle='dotted')
 ax[1].legend(fontsize=9)
 ax[1].set_xlabel('Time (hour)')
@@ -2357,31 +2005,27 @@ tn1_weekend_n = tn1_weekend_n/Area
 # for ii in range(len(training_weekends_norm)):
 #      ax[2].plot(time,training_weekends_norm[ii], linewidth='0.5')
 ax[2].plot(time, tn1_weekend_n, linewidth=2, color='green', label='Mathematical Weekend wave')
-ax[2].set_ylim([0,ymax])
+ax[2].set_ylim([0,0.07])
 ax[2].grid(linestyle='dotted')
 ax[2].legend()
 ax[2].set_xlabel('Time (hour)')
 ax[2].set_ylabel('Probability');
 
 
-# In[271]:
+# In[71]:
 
 
 #**************************************WEEKDAY************************************
-tn_weekday = tn_weekday_n*weekday_max + weekday_offset
-tn_arr_weekday = tn_arr_weekday_n*weekday_max + weekday_offset
-tn_dep_weekday = tn_dep_weekday_n*weekday_max #+ weekday_offset
+tn_weekday = tn_weekday_n*weekday_area + weekday_offset
 
 #**************************************FRIDAY************************************
-tn_friday = tn_friday_n*friday_max + friday_offset
-tn_arr_friday = tn_arr_friday_n*friday_max + friday_offset
-tn_dep_friday = tn_dep_friday_n*friday_max #+ friday_offset
+tn_friday = tn_friday_n*friday_area + friday_offset
 
 #**************************************WEEKEND************************************
-tn1_weekend = tn1_weekend_n*weekend_max + weekend_offset 
+tn1_weekend = tn1_weekend_n*weekend_area + weekend_offset 
 
 
-# In[267]:
+# In[72]:
 
 
 fig, ax = plt.subplots(1,3)
@@ -2421,7 +2065,7 @@ ax[2].set_ylabel('Probability');
 
 # ### Comparing normalized mathematical fitted prototype with testing data
 
-# In[212]:
+# In[73]:
 
 
 def subplot_training(fig, ax, xx, yy, proto_data, test_days, day, proto_name): 
@@ -2438,7 +2082,7 @@ def subplot_training(fig, ax, xx, yy, proto_data, test_days, day, proto_name):
 
 # ### Denormalization / Rescaling
 
-# In[213]:
+# In[74]:
 
 
 fig, ax = plt.subplots(3, 3)
@@ -2446,9 +2090,9 @@ fig.set_figwidth(20)
 fig.set_figheight(14)
 fig.suptitle('Comparison of each day real data against CDF subtraction (Denormalized) - ' + current_parking, fontsize=20)
 
-tn_weekday = tn_weekday_n*weekday_max + weekday_offset
-tn_friday = tn_friday_n*friday_max + friday_offset
-tn1_weekend = tn1_weekend_n*weekend_max + weekend_offset 
+tn_weekday = tn_weekday_n*weekday_area + weekday_offset
+tn_friday = tn_friday_n*friday_area + friday_offset
+tn1_weekend = tn1_weekend_n*weekend_area + weekend_offset 
 
 subplot_training(fig, ax, 0, 0, tn_weekday, testing_mondays, 'Monday', 'Weekday')
 subplot_training(fig, ax, 0, 1, tn_weekday, testing_tuesdays, 'Tuesday', 'Weekday')
@@ -2465,7 +2109,7 @@ ax[1,2].set_ylim(0,axis_ylim_we)
 fig.tight_layout(pad=5.0)
 
 
-# In[214]:
+# In[75]:
 
 
 fig = plt.figure(figsize=(17,11))
@@ -2482,7 +2126,7 @@ plt.yticks(fontsize=16)
 plt.xticks(fontsize=16);
 
 
-# In[215]:
+# In[76]:
 
 
 def compute_testing_prop_error(testing_days, proto_data):
@@ -2581,7 +2225,7 @@ print(np.std(error_sunday_tn))
 
 # ### MATHEMATICAL PROTOTYE: Real time prediction by SCALING
 
-# In[216]:
+# In[77]:
 
 
 # Plotting methods to reduce cell dimension
@@ -2641,55 +2285,16 @@ def get_scaling_factor(limit_hour, test_day, proto):
     return scaling
 
 
-# In[280]:
-
-
-def plot_prototype():
-    for i in range(0,len(tn_proto)):
-        if tn_proto[i] < 0:
-            tn_proto[i] = 0
-    cont=0
-    for i in range(0,len(t_days)):
-        t_date=t_dates[cont]
-        print(t_date)
-        tn_scaling = get_scaling_factor(limit_hour, t_days[i], tn_proto)
-        tn_arr_scaling = get_scaling_factor(limit_hour, t_days[i], tn_arr_proto)
-        stat_scaling = get_scaling_factor(limit_hour, t_days[i], hist_weekday_proto.values)
-
-        scaled_tn_proto = tn_proto * tn_scaling
-        scaled_tn_arr_proto = tn_arr_proto * tn_arr_scaling
-        scaled_tn_dep_proto = tn_dep_proto * tn_arr_scaling
-
-        if max(scaled_tn_arr_proto)>max_value:
-            cars_could_not_park=max(scaled_tn_arr_proto[scaled_tn_arr_proto >max_value])-max_value
-            print(round(cars_could_not_park), "cars could not park")
-            scaled_tn_arr_proto[scaled_tn_arr_proto >max_value]=max_value
-            scaled_tn_dep_proto=scaled_tn_dep_proto/max(scaled_tn_dep_proto)*(max_value-weekday_offset)
-        scaled_tn_proto2=scaled_tn_arr_proto-scaled_tn_dep_proto
-
-        scaled_stat_proto = hist_weekday_proto.values * stat_scaling
-        fig, ax = plt.subplots(1, 2)
-        fig.set_figwidth(20)
-        fig.set_figheight(5)
-        axx=0;
-        real_timing_predition(fig, ax, axx, day, tn_proto, t_days[i], scaled_tn_proto2, scaled_stat_proto, limit_hour, t_date)
-        axx=1;
-        errors_plotting(fig, ax, axx, scaled_tn_proto2, scaled_stat_proto, t_days[i], day, limit_hour)
-        cont=cont+1
-
-
 # #### MONDAY
 
-# In[279]:
+# In[78]:
 
 
 statistic_proto = hist_weekday_proto
 tn_proto = tn_weekday
-tn_arr_proto = tn_arr_weekday
-tn_dep_proto = tn_dep_weekday
 t_days = testing_mondays
 t_dates=testing_mondays_dates
-limit_hour = 8
+limit_hour = 16
 day = 'Monday'
 # Negative values to 0
 for i in range(0,len(tn_proto)):
@@ -2700,98 +2305,158 @@ for i in range(0,len(t_days)):
     t_date=t_dates[cont]
     print(t_date)
     tn_scaling = get_scaling_factor(limit_hour, t_days[i], tn_proto)
-    tn_arr_scaling = get_scaling_factor(limit_hour, t_days[i], tn_arr_proto)
     stat_scaling = get_scaling_factor(limit_hour, t_days[i], hist_weekday_proto.values)
     
     scaled_tn_proto = tn_proto * tn_scaling
-    scaled_tn_arr_proto = tn_arr_proto * tn_arr_scaling
-    scaled_tn_dep_proto = tn_dep_proto * tn_arr_scaling
-    
-    if max(scaled_tn_arr_proto)>max_value:
-        cars_could_not_park=max(scaled_tn_arr_proto[scaled_tn_arr_proto >max_value])-max_value
-        print(round(cars_could_not_park), "cars could not park")
-        scaled_tn_arr_proto[scaled_tn_arr_proto >max_value]=max_value
-        scaled_tn_dep_proto=scaled_tn_dep_proto/max(scaled_tn_dep_proto)*(max_value-weekday_offset)
-    scaled_tn_proto2=scaled_tn_arr_proto-scaled_tn_dep_proto
-    
     scaled_stat_proto = hist_weekday_proto.values * stat_scaling
     fig, ax = plt.subplots(1, 2)
     fig.set_figwidth(20)
     fig.set_figheight(5)
     axx=0;
-    real_timing_predition(fig, ax, axx, day, tn_proto, t_days[i], scaled_tn_proto2, scaled_stat_proto, limit_hour, t_date)
+    real_timing_predition(fig, ax, axx, day, tn_proto, t_days[i], scaled_tn_proto, scaled_stat_proto, limit_hour, t_date)
     axx=1;
-    errors_plotting(fig, ax, axx, scaled_tn_proto2, scaled_stat_proto, t_days[i], day, limit_hour)
+    errors_plotting(fig, ax, axx, scaled_tn_proto, scaled_stat_proto, t_days[i], day, limit_hour)
     cont=cont+1
 
 
 # #### TUESDAY
 
-# In[283]:
+# In[79]:
 
 
 statistic_proto = hist_weekday_proto
 tn_proto = tn_weekday
-tn_arr_proto = tn_arr_weekday
-tn_dep_proto = tn_dep_weekday
 t_days = testing_tuesdays
 t_dates= testing_tuesdays_dates
-limit_hour = 8
+limit_hour = 10
 day = 'Tuesday'
 # Negative values to 0
-
-plot_prototype()
+for i in range(0,len(tn_proto)):
+    if tn_proto[i] < 0:
+        tn_proto[i] = 0
+cont=0
+for i in range(0,len(t_days)):
+    t_date=t_dates[cont]
+    print(t_date)
+    tn_scaling = get_scaling_factor(limit_hour, t_days[i], tn_proto)
+    stat_scaling = get_scaling_factor(limit_hour, t_days[i], hist_weekday_proto.values)
+    
+    scaled_tn_proto = tn_proto * tn_scaling
+    scaled_stat_proto = hist_weekday_proto.values * stat_scaling
+    fig, ax = plt.subplots(1, 2)
+    fig.set_figwidth(20)
+    fig.set_figheight(6)
+    axx=0;
+    real_timing_predition(fig, ax, axx, day, tn_proto, t_days[i], scaled_tn_proto, scaled_stat_proto, limit_hour, t_date)
+    axx=1;
+    errors_plotting(fig, ax, axx, scaled_tn_proto, scaled_stat_proto, t_days[i], day, limit_hour)
+    cont=cont+1
 
 
 # ### WEDNESDAY
 
-# In[285]:
+# In[80]:
 
 
 statistic_proto = hist_weekday_proto
 tn_proto = tn_weekday
 t_days = testing_wednesdays
 t_dates= testing_wednesdays_dates
-limit_hour = 8
+limit_hour = 13
 day = 'Wednesday'
+# Negative values to 0
+for i in range(0,len(tn_proto)):
+    if tn_proto[i] < 0:
+        tn_proto[i] = 0
 
-tn_arr_proto = tn_arr_weekday
-tn_dep_proto = tn_dep_weekday
-plot_prototype()
+cont=0        
+for i in range(0,len(t_days)):
+    t_date=t_dates[cont]
+    print(t_date)
+    tn_scaling = get_scaling_factor(limit_hour, t_days[i], tn_proto)
+    stat_scaling = get_scaling_factor(limit_hour, t_days[i], hist_weekday_proto.values)
+    
+    scaled_tn_proto = tn_proto * tn_scaling
+    scaled_stat_proto = hist_weekday_proto.values * stat_scaling
+    fig, ax = plt.subplots(1, 2)
+    fig.set_figwidth(20)
+    fig.set_figheight(6)
+    axx=0;
+    real_timing_predition(fig, ax, axx, day, tn_proto, t_days[i], scaled_tn_proto, scaled_stat_proto, limit_hour, t_date)
+    axx=1;
+    errors_plotting(fig, ax, axx, scaled_tn_proto, scaled_stat_proto, t_days[i], day, limit_hour)
+    cont=cont+1
 
 
 # ### THURSDAY
 
-# In[286]:
+# In[81]:
 
 
 statistic_proto = hist_weekday_proto
 tn_proto = tn_weekday
 t_days = testing_thursdays
 t_dates= testing_thursdays_dates
-limit_hour = 8
+limit_hour = 13
 day = 'Thursday'
-
-tn_arr_proto = tn_arr_weekday
-tn_dep_proto = tn_dep_weekday
-plot_prototype()
+# Negative values to 0
+for i in range(0,len(tn_proto)):
+    if tn_proto[i] < 0:
+        tn_proto[i] = 0
+        
+cont=0
+for i in range(0,len(t_days)):
+    t_date=t_dates[cont]
+    print(t_date)
+    tn_scaling = get_scaling_factor(limit_hour, t_days[i], tn_proto)
+    stat_scaling = get_scaling_factor(limit_hour, t_days[i], hist_weekday_proto.values)
+    
+    scaled_tn_proto = tn_proto * tn_scaling
+    scaled_stat_proto = hist_weekday_proto.values * stat_scaling
+    fig, ax = plt.subplots(1, 2)
+    fig.set_figwidth(20)
+    fig.set_figheight(6)
+    axx=0;
+    real_timing_predition(fig, ax, axx, day, tn_proto, t_days[i], scaled_tn_proto, scaled_stat_proto, limit_hour, t_date)
+    axx=1;
+    errors_plotting(fig, ax, axx, scaled_tn_proto, scaled_stat_proto, t_days[i], day, limit_hour)
+    cont=cont+1
+    
 
 
 # ### FRIDAY
 
-# In[289]:
+# In[82]:
 
 
 statistic_proto = hist_friday_proto
 tn_proto = tn_friday
 t_days = testing_fridays
 t_dates=testing_fridays_dates
-limit_hour = 8
+limit_hour = 16
 day = 'Friday'
-
-tn_arr_proto = tn_arr_friday
-tn_dep_proto = tn_dep_friday
-plot_prototype()
+# Negative values to 0
+for i in range(0,len(tn_proto)):
+    if tn_proto[i] < 0:
+        tn_proto[i] = 0
+  
+cont=0
+for i in range(0,len(t_days)):
+    t_date=t_dates[cont]
+    print(t_date)
+    tn_scaling = get_scaling_factor(limit_hour, t_days[i], tn_proto)
+    stat_scaling = get_scaling_factor(limit_hour, t_days[i], statistic_proto.values)
+    
+    scaled_tn_proto = tn_proto * tn_scaling
+    scaled_stat_proto = statistic_proto.values * stat_scaling
+    fig, ax = plt.subplots(1, 2)
+    fig.set_figwidth(20)
+    fig.set_figheight(6)
+    axx=0;
+    real_timing_predition(fig, ax, axx, day, tn_proto, t_days[i], scaled_tn_proto, scaled_stat_proto, limit_hour, t_date)
+    axx=1;
+    errors_plotting(fig, ax, axx, scaled_tn_proto, scaled_stat_proto, t_days[i], day, limit_hour)
+    cont=cont+1
     
 
 
@@ -2799,7 +2464,7 @@ plot_prototype()
 
 # ### SATURDAY
 
-# In[290]:
+# In[83]:
 
 
 statistic_proto = hist_weekend_proto
@@ -2835,7 +2500,7 @@ for i in range(0,len(t_days)):
 
 # ### SUNDAY
 
-# In[291]:
+# In[84]:
 
 
 statistic_proto = hist_weekend_proto
@@ -2869,39 +2534,9 @@ for i in range(0,len(t_days)):
     cont=cont+1
 
 
-# In[292]:
-
-
-def printTimes(params,timeString='WEEKDAYS'):
-    print("--------- "+timeString +" "+current_parking+" -----------")
-    loc_ar = params[0]*24
-    scale_ar = params[1]*24
-    loc_de = params[2]*24
-    scale_de = params[3]*24
-
-    print(f'Mean Arrival Time   = {int(loc_ar):02.0f}:{int((loc_ar-int(loc_ar))*60):02.0f}h')
-    print(f'stdv Arrival        = {int(scale_ar):2.0f}:{int((scale_ar-int(scale_ar))*60):02.0f}h')
-    print(f'Mean Departure Time = {int(loc_de):02.0f}:{int((loc_de-int(loc_de))*60):02.0f}h')
-    print(f'stdv Departure      = {int(scale_de):2.0f}:{int((scale_de-int(scale_de))*60):02.0f}h')
-    if len(params)>4:
-        thresh=params[4]
-        if thresh<1:
-            cdf_ar = tn_cdf(time_tn, loc_ar/24, scale_ar/24)
-            time_parking_full= 0.5*np.argmax(cdf_ar>thresh)
-            print(f'Parking full        = {int(time_parking_full):02.0f}:{int((time_parking_full-int(time_parking_full))*60):02.0f}h')
-
-
-# In[293]:
-
-
-printTimes(optimal_params_weekdaytn.x,'WEEKDAYS')
-printTimes(optimal_params_fridaytn.x,'FRIDAYS')
-printTimes(optimal_params_weekendtn.x,'WEEKENDS')
-
-
 # # Store protos, params, areas and offsets
 
-# In[179]:
+# In[85]:
 
 
 # df_prototypes = pd.read_csv('data/prototypes_new.csv')
@@ -2952,7 +2587,7 @@ printTimes(optimal_params_weekendtn.x,'WEEKENDS')
 # df_prototypes
 
 
-# In[180]:
+# In[86]:
 
 
 # How to read the prorotypes: 
@@ -2961,7 +2596,7 @@ printTimes(optimal_params_weekendtn.x,'WEEKENDS')
 # final_list = list(np.float_(list_of_strings))
 
 
-# In[181]:
+# In[87]:
 
 
 # import pandas as pd
@@ -2972,7 +2607,7 @@ printTimes(optimal_params_weekendtn.x,'WEEKENDS')
 # df_prototypes_2
 
 
-# In[182]:
+# In[88]:
 
 
 # df_prototypes_2.to_csv("data/prototypes_new.csv", index=False)
@@ -2982,7 +2617,7 @@ printTimes(optimal_params_weekendtn.x,'WEEKENDS')
 # real_day.values
 
 
-# In[183]:
+# In[89]:
 
 
 # hist_friday_proto.tolist()
