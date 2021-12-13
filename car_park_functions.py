@@ -17,6 +17,24 @@ import calendar
 def getDayName(d):
     return calendar.day_name[d.weekday()]
 
+def get_days_of_protos_normalized(proto_name, df_):
+    data_temp = df_[df_['Profile_3'] == proto_name] 
+    days = []
+    for i in range(0,data_temp.shape[0], 48):
+        day = data_temp['Normalized_occupancy'][i:i+48]
+        if len(day) == 48:
+            days.append(day)
+        
+    return days
+
+def get_parkingfull_of_protos(proto_name, df_):
+    data_temp = df_[df_['Profile_3'] == proto_name] 
+    isfull = []
+    for i in range(0,data_temp.shape[0], 48):
+        intervallIsfull = data_temp['Free slots'][i:i+48]==0
+        if len(intervallIsfull) == 48:
+            isfull.append(max(intervallIsfull))
+    return isfull
 
 def classify_2_proto(x):
     weekday_list = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
@@ -113,3 +131,17 @@ def model_tn_areaN_args(params,trainining_norm,errors):
         errors[ii,:] = np.power(res_n - day, 2)
     #return error
     return np.sum(errors)
+
+
+
+def subplot_training(fig, ax, xx, yy, proto_data, test_days, day, proto_name,axis_ylim): 
+    time = np.linspace(0,23.5,48)
+    ax[xx,yy].plot(time, proto_data, linewidth=3, linestyle='dashed', label= proto_name + ' TN prediction')
+    for i in range(0, len(test_days)): 
+        ax[xx, yy].plot(time, test_days[i], linewidth=1, label='Testing ' + day )
+        if i==0:
+            ax[xx,yy].legend(fontsize=16)
+    ax[xx,yy].grid(linestyle='dotted')
+    ax[xx,yy].set_ylim(-2,axis_ylim)
+    ax[xx,yy].set_xlabel('Time (hours)', fontsize=16)
+    ax[xx,yy].set_ylabel('Occupancy', fontsize=16)

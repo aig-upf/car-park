@@ -22,6 +22,7 @@ df_column_name=['Parking Vilanova Renfe','Parking Sant Sadurní Renfe','Parking 
                'Parking Prat del Ll.']
 current_parking_ix=0
 for current_parking_ix in range(0,len(available_parkings)):
+#for current_parking_ix in range(0,1):    
 # parkings which fill up: 3 QuatreCamins, 7 Mollet, 1 SantSadurni (sometimes),
 # problems on Weekend with 2 SantBoi, 4 Cerdanyola, 
 # bad data: 6 Martorell, 8 SantQuirze DO NOT USE
@@ -754,155 +755,46 @@ for current_parking_ix in range(0,len(available_parkings)):
     
     
     df_normalized = pd.read_pickle('data/'+current_parking+'_normalized.pkl')
-    # In[42]:
     
     
-    #df_normalized['Free slots'].plot.hist(bins=161)
+    import pickle
+
+    # obj0, obj1, obj2 are created here...
     
+    # Saving the objects:
+    with open('data/'+current_parking+'_normalized.pkl', 'wb') as f:  # Python 3: open(..., 'wb')
+        pickle.dump([df_normalized, weekday_offset, friday_offset, weekend_offset, max_value], f)
+        f.close()
     
-    # In[67]:
+    # Getting back the objects:
+    with open('data/'+current_parking+'_normalized.pkl','rb') as f:  # Python 3: open(..., 'rb')
+        df_normalized, weekday_offset, friday_offset,  weekend_offset, max_value= pickle.load(f)
+        f.close()
     
+    # Saving the objects:
+    with open('data/'+current_parking+'_testing.pkl', 'wb') as f:  # Python 3: open(..., 'wb')
+        pickle.dump([testing_mondays, testing_mondays_dates, testing_tuesdays, testing_tuesdays_dates, 
+                     testing_wednesdays, testing_wednesdays_dates, testing_thursdays, testing_thursdays_dates, 
+                     testing_fridays, testing_fridays_dates, testing_saturdays, testing_saturdays_dates,
+                     testing_sundays, testing_sundays_dates], f)
+        f.close(), 
     
+    # Getting back the objects:
+    with open('data/'+current_parking+'_testing.pkl','rb') as f:  # Python 3: open(..., 'rb')
+        [testing_mondays, testing_mondays_dates, testing_tuesdays, testing_tuesdays_dates, 
+        testing_wednesdays, testing_wednesdays_dates, testing_thursdays, testing_thursdays_dates, 
+        testing_fridays, testing_fridays_dates, testing_saturdays, testing_saturdays_dates,
+        testing_sundays, testing_sundays_dates]= pickle.load(f)
+        f.close()  
+  
+ 
+    # Saving the objects:
+    with open('data/'+current_parking+'_proto.pkl', 'wb') as f:  # Python 3: open(..., 'wb')
+        pickle.dump([hist_weekday_proto, hist_friday_proto, hist_weekend_proto], f)
+        f.close(), 
     
-    # In[68]:
-    
-    
-    def split_data(df, n_test_weeks, limit_date = None, from_end=True): 
-        if(limit_date != None):
-            init_test = df[df['Date']==limit_date].index[0];
-            end_test = df.shape[0]
-            test_domain = range(init_test, end_test)
-            test_domain = list(test_domain)
-    
-        else:
-            if(from_end == True):
-                end_test = df.shape[0]
-                week_domain = n_test_weeks*336
-                init_test = end_test-week_domain
-                test_domain = range(init_test, end_test)
-                test_domain = list(test_domain)
-                
-            elif(from_end == False):
-                week_domain = n_test_weeks*336
-                init_test = 0
-                end_test = week_domain
-                test_domain = range(0,week_domain)
-                test_domain = list(test_domain)
-                
-        test_df = df[init_test:end_test]
-        training_df = df.drop(test_domain)
-        return training_df, test_df
-    
-    
-    # In[69]:
-    
-    
-    df_training, df_testing = split_data(df_normalized, 3)
-    
-    
-    # In[70]:
-    
-    
-    #pd.set_option('display.max_rows', None)
-    #df_testing.sort_values(by='Area', ascending=True)
-    
-    
-    # In[71]:
-    
-    
-    #pd.set_option('display.max_rows', 5)
-    
-    
-    # In[209]:
-    
-    
-    df_training['Area'] = df_training['Date'].apply(lambda x: Area_by_date(x))
-    df_training
-    
-    df_mean_areas = df_training.groupby(['Profile_3'], as_index=False).mean() 
-    df_mean_areas[['Profile_3', 'Area']]
-    
-    friday_area = df_mean_areas.iloc[0]['Area']
-    weekday_area = df_mean_areas.iloc[1]['Area']
-    weekend_area = df_mean_areas.iloc[2]['Area']
-    
-    friday_max = df_mean_areas.iloc[0]['MaxV']
-    weekday_max = df_mean_areas.iloc[1]['MaxV']
-    weekend_max = df_mean_areas.iloc[2]['MaxV']
-    
-    print('Weekday area: ' , weekday_area)
-    print('Friday area: ' , friday_area)
-    print('Weekend area: ' , weekend_area)
-    
-    print('Weekday maximum: ' , weekday_max)
-    print('Friday maximum: ' , friday_max)
-    print('Weekend maximum: ' , weekend_max)
-    
-    
-    # df_normalized
-    
-    
-    # In[73]:
-    
-    
-    def get_days_normalized(dayname, df_):
-        data_temp = df_[df_['Weekday'] == dayname] 
-        days = []
-        for i in range(0,data_temp.shape[0], 48):
-            day = data_temp['Normalized_occupancy'][i:i+48]
-            if len(day) == 48:
-                days.append(day)
-        return days
-    
-    def get_days_of_protos_normalized(proto_name, df_):
-        data_temp = df_[df_['Profile_3'] == proto_name] 
-        days = []
-        for i in range(0,data_temp.shape[0], 48):
-            day = data_temp['Normalized_occupancy'][i:i+48]
-            if len(day) == 48:
-                days.append(day)
-            
-        return days
-    
-    
-    # In[74]:
-    
-    
-    # ------------------------ NEW TESTING DATA -----------------------------
-    # these variables are arrays of days
-    testing_mondays_norm    = get_days_normalized("Monday", df_testing)
-    testing_tuesdays_norm   = get_days_normalized("Tuesday", df_testing)
-    testing_wednesdays_norm = get_days_normalized("Wednesday", df_testing)
-    testing_thursdays_norm  = get_days_normalized("Thursday", df_testing)
-    testing_fridays_norm    = get_days_normalized("Friday", df_testing)
-    testing_saturdays_norm  = get_days_normalized("Saturday", df_testing)
-    testing_sundays_norm    = get_days_normalized("Sunday", df_testing)
-    
-    testing_mondays    = get_days("Monday", df_testing)
-    testing_tuesdays   = get_days("Tuesday", df_testing)
-    testing_wednesdays = get_days("Wednesday", df_testing)
-    testing_thursdays  = get_days("Thursday", df_testing)
-    testing_fridays    = get_days("Friday", df_testing)
-    testing_saturdays  = get_days("Saturday", df_testing)
-    testing_sundays    = get_days("Sunday", df_testing)
-    
-    
-    # In[105]:
-    
-    
-    training_weekdays_norm  = get_days_of_protos_normalized("Weekday", df_training)
-    training_fridays_norm  = get_days_of_protos_normalized("Friday", df_training)
-    training_weekends_norm  = get_days_of_protos_normalized("Weekend", df_training)
-    # for ii in range(len(training_weekdays_norm)):
-    #     plt.plot(time,training_weekdays_norm[ii])
-    
-    
-    # In[76]:
-    
-    
-    pd.set_option("max_rows", None)
-    df_training[df_training.Weekday=='Sunday']
-    pd.set_option("max_rows", 10)
-    
-    
-    # In[77]:
+
+    # Getting back the objects:
+    with open('data/'+current_parking+'_proto.pkl','rb') as f:  # Python 3: open(..., 'rb')
+        [hist_weekday_proto, hist_friday_proto, hist_weekend_proto]= pickle.load(f)
+        f.close() 
