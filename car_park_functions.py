@@ -6,12 +6,10 @@ Created on Fri Dec  3 10:49:06 2021
 @author: andreas
 """
 
-#from scipy.special import tna, factorial
+from matplotlib import pyplot as plt
 from scipy.stats import truncnorm 
-from scipy.optimize import curve_fit
-from scipy.optimize import minimize
-from sklearn.metrics import mean_squared_error
 import numpy as np
+
 import calendar
 
 def getDayName(d):
@@ -114,8 +112,7 @@ def model_tn_areaN_args(params,trainining_norm,errors):
     scale_de = params[3]
  
     num_training_days = len(trainining_norm)
-    time = np.linspace(0,23.5,48)
-    time_tn=time/24
+    time_tn = np.linspace(0,23.5,48)/24
     
     cdf_ar=tn_cdf(time_tn, loc_ar, scale_ar)
     cdf_de=tn_cdf(time_tn, loc_de, scale_de)
@@ -132,6 +129,66 @@ def model_tn_areaN_args(params,trainining_norm,errors):
     #return error
     return np.sum(errors)
 
+def model_tn_th_max_args(params,trainining_norm,errors): 
+    loc_ar = params[0]
+    scale_ar = params[1]
+    loc_de = params[2]
+    scale_de = params[3]
+    thresh=params[4]
+
+    num_training_days = len(trainining_norm)
+    time_tn = np.linspace(0,23.5,48)/24
+
+    cdf_ar=tn_cdf(time_tn, loc_ar, scale_ar)
+    cdf_de=tn_cdf(time_tn, loc_de, scale_de)
+
+    cdf_ar[cdf_ar>thresh] = thresh
+    cdf_ar = cdf_ar/thresh
+
+    res = cdf_ar - cdf_de
+    res_n = res 
+  
+    for ii in range(0,num_training_days):
+        day = trainining_norm[ii]
+        errors[ii,:] = np.power(res_n - day, 2)
+    return  np.sum(errors)
+
+
+def model_tn_th_ind_max(params,trainining_norm,training_isfull,errors): 
+    loc_ar = params[0]
+    scale_ar = params[1]
+    loc_de = params[2]
+    scale_de = params[3]
+ 
+    num_training_days = len(trainining_norm)
+    time_tn = np.linspace(0,23.5,48)/24
+
+    cdf_ar=tn_cdf(time_tn, loc_ar, scale_ar)
+    cdf_de=tn_cdf(time_tn, loc_de, scale_de)
+
+
+    res = cdf_ar - cdf_de
+    res_n = res
+    
+
+    for ii in range(0,num_training_days):
+        day = trainining_norm[ii]
+        dayisFull=training_isfull[ii]
+        
+        if dayisFull:
+            thresh=params[4+ii]
+            cdf_ar_th=cdf_ar
+            cdf_ar_th[cdf_ar>thresh] = thresh
+            cdf_ar_th = cdf_ar_th/thresh
+    
+            res_th = cdf_ar_th - cdf_de
+            res_th_n = res_th#/sum(res_th)
+            
+            errors[ii,:] = np.power(res_th_n - day, 2)
+        else:
+            errors[ii,:] = np.power(res_n - day,2)      
+    return np.sum(errors)
+
 
 
 def subplot_training(fig, ax, xx, yy, proto_data, test_days, day, proto_name,axis_ylim): 
@@ -145,3 +202,67 @@ def subplot_training(fig, ax, xx, yy, proto_data, test_days, day, proto_name,axi
     ax[xx,yy].set_ylim(-2,axis_ylim)
     ax[xx,yy].set_xlabel('Time (hours)', fontsize=16)
     ax[xx,yy].set_ylabel('Occupancy', fontsize=16)
+    
+    
+def plot_model_tn(loc_ar=.3, scale_ar=.05, loc_de=.8, scale_de=.1):
+    # arrivals
+    a_ar = -loc_ar/scale_ar
+    b_ar = (1-loc_ar)/scale_ar
+    
+    # departures
+    a_de = -loc_de/scale_de
+    b_de = (1-loc_de)/scale_de
+    
+    time = np.linspace(0,23.5,48)
+    time_tn=time/24
+    
+    pdf_ar = truncnorm.pdf(time_tn, a_ar, b_ar, loc=loc_ar, scale=scale_ar)
+    pdf_de = truncnorm.pdf(time_tn, a_de, b_de, loc=loc_de, scale=scale_de)
+    cdf_ar = truncnorm.cdf(time_tn, a_ar, b_ar, loc=loc_ar, scale=scale_ar)
+    cdf_de = truncnorm.cdf(time_tn, a_de, b_de, loc=loc_de, scale=scale_de)
+    
+    fig, ax = plt.subplots(2)
+    ax[0].plot(time, pdf_ar , '-b')
+    ax[0].plot(time, pdf_de, '-r')
+    ax[0].set_title('pdfs')
+    
+    ax[1].plot(time, cdf_ar , '--b')
+    ax[1].plot(time, cdf_de, '--r')
+    ax[1].plot(time, cdf_ar-cdf_de, 'r')
+    ax[1].set_title('cdfs')   
+       
+def plot_model_tn_th(loc_ar=.3, scale_ar=.05, loc_de=.8, scale_de=.1,thresh=.8):
+    # arrivals
+    a_ar = -loc_ar/scale_ar
+    b_ar = (1-loc_ar)/scale_ar
+
+    # departures
+    a_de = -loc_de/scale_de
+    b_de = (1-loc_de)/scale_de
+
+    time = np.linspace(0,23.5,48)
+    time_tn=time/24
+
+    pdf_ar = truncnorm.pdf(time_tn, a_ar, b_ar, loc=loc_ar, scale=scale_ar)
+    pdf_de = truncnorm.pdf(time_tn, a_de, b_de, loc=loc_de, scale=scale_de)
+    cdf_ar = truncnorm.cdf(time_tn, a_ar, b_ar, loc=loc_ar, scale=scale_ar)
+    
+    ix_parking_full= np.argmax(cdf_ar>thresh)
+    pdf_ar[cdf_ar>thresh] =0
+    cdf_ar[cdf_ar>thresh] = thresh
+    cdf_ar = cdf_ar/thresh
+    
+    cdf_de = truncnorm.cdf(time_tn, a_de, b_de, loc=loc_de, scale=scale_de)
+
+    fig, ax = plt.subplots(2)
+    ax[0].plot(time, pdf_ar , '-b')
+    ax[0].plot(time, pdf_de, '-r')
+    ax[0].plot(0.5*ix_parking_full*np.array([1, 1]),[0, max(pdf_ar)],'--')
+    ax[0].set_title('pdfs')
+
+    ax[1].plot(time, cdf_ar , '--b')
+    ax[1].plot(time, cdf_de, '--r')
+    ax[1].plot(time, cdf_ar-cdf_de, 'r')
+    ax[1].plot(0.5*ix_parking_full*np.array([1, 1]),[0,1],'--')
+    ax[1].set_title('cdfs')
+    

@@ -10,6 +10,7 @@ import pandas as pd
 import pickle
 from scipy import integrate
 from car_park_functions import *
+import math 
 
 
 # In[2]:
@@ -71,7 +72,6 @@ print('Weekend maximum: ' , weekend_max)
 # ********************************************** WEEKDAY *************************************************************
 #from scipy.special import tna, factorial
 from scipy.stats import truncnorm 
-from scipy.optimize import curve_fit
 from scipy.optimize import minimize
 from sklearn.metrics import mean_squared_error
 time = np.linspace(0,23.5,48)
@@ -113,77 +113,6 @@ f_length = len(training_fridays_norm)
 we_length = len(training_weekends_norm)
 
 
-def model_weekdays_tn(params): 
-    loc_ar = params[0]
-    scale_ar = params[1]
-    loc_de = params[2]
-    scale_de = params[3]
-
-     # arrivals
-    #a_ar = -loc_ar/scale_ar
-    #b_ar = (1-loc_ar)/scale_ar
-
-    # departures
-    #a_de = -loc_de/scale_de
-    #b_de = (1-loc_de)/scale_de
-    
-    # make tn for arrivals
-    # arrival_pdf = tn(time_tn, loc_ar, scale_ar)
-    # make tn for departures
-    # departure_pdf = tn(time_tn, loc_de, scale_de)
-    # compute CDF for arrivals
-    # arrival_cdf = generate_cdf(arrival_pdf)
-    
-    # compute CDF for departures
-    # departure_cdf = generate_cdf(departure_pdf)
-    #cdf_ar = truncnorm.cdf(time_tn, a_ar, b_ar, loc=loc_ar, scale=scale_ar)
-    #cdf_de = truncnorm.cdf(time_tn, a_de, b_de, loc=loc_de, scale=scale_de)
-    cdf_ar=tn_cdf(time_tn, loc_ar, scale_ar)
-    cdf_de=tn_cdf(time_tn, loc_de, scale_de)
-
-    #res = np.array(arrival_cdf) - np.array(departure_cdf)
-    #res_n = res/sum(res)
-    
-    #res = np.array(cdf_ar) - np.array(cdf_de)
-    res = cdf_ar - cdf_de
-    res_n = res/sum(res)
-  
-    #res_n[res_n>thresh] = thresh
-    #plt.plot(res_n)
-    #plt.show()
-    error = 0  
-    for ii in range(0,wd_length):
-        day = training_weekdays_norm[ii]
-        error += mean_squared_error(res_n, day)
-
-    #plot_model_tn_pres(loc_ar, scale_ar, loc_de, scale_de) 
-    #print("mua = " + str(loc_ar) + "\tstda  = " + str(scale_ar))
-    #print("mus = " + str(loc_de) + "\tstds = " + str(scale_de))
-    #print("Err = " + str(error))
-    return error
-
-def model_weekdays_tn_th_max(params): 
-    loc_ar = params[0]
-    scale_ar = params[1]
-    loc_de = params[2]
-    scale_de = params[3]
-    thresh=params[4]
-
-    cdf_ar=tn_cdf(time_tn, loc_ar, scale_ar)
-    cdf_de=tn_cdf(time_tn, loc_de, scale_de)
-
-    cdf_ar[cdf_ar>thresh] = thresh
-    cdf_ar = cdf_ar/thresh
-
-    res = cdf_ar - cdf_de
-    res_n = res #/sum(res)
-  
-    error = 0  
-    for ii in range(0,wd_length):
-        day = training_weekdays_norm[ii]
-        error += np.sum(np.power(res_n - day, 2))
-        #error += mean_squared_error(res_n, day)
-    return error
 
 
 def model_weekdays_tn_th_ind_max(params): 
@@ -228,25 +157,47 @@ def model_weekdays_tn_th_ind_max(params):
             #error += mean_squared_error(res_n, day)           
     return error
 
-# params order = a1, b1, a2, b2, rescale
-# params order: loc_ar=.3, scale_ar=.05, loc_de=.8, scale_de=.1, rescale
-#parameters = np.array([ 2 , 20, 5, 80, 0.02])
-#parameters_tn = np.array([.3 ,.05,.8,.1])
-#parameters_tn = np.array([.2 ,.05,.7,.1])
+# params order = a1, b1, a2, b2, tresh
+
 parameters_tn_th = np.array([.2 ,.05,.7,.1,1])
-#optimal_params_weekday = minimize(model_weekdays, parameters, method='Nelder-Mead', tol=0.01)
-#optimal_params_weekdaytn = minimize(model_weekdays_tn, parameters_tn, method='Nelder-Mead', tol=0.01)
-#optimal_params_weekdaytn = minimize(model_weekdays_tn, parameters_tn, method='Nelder-Mead',
-#                                    tol=1e-6, options={'disp': T3rue})
-optimal_params_weekdaytn_glo = minimize(model_weekdays_tn_th_max, parameters_tn_th, method='Nelder-Mead',
-                                    tol=1e-6, options={'disp': True})
-var_glo = optimal_params_weekdaytn_glo.fun/np.size(training_weekdays_norm)
+errors = np.ones(np.shape(training_weekdays_norm))
+
+optimal_params_weekdaytn_glo = minimize(model_tn_th_max_args, 
+                                        parameters_tn_th,
+                                        args=(training_weekdays_norm, errors),
+                                        method='Nelder-Mead',
+                                        tol=1e-6, options={'disp': True, 'maxfev': 10000})
+
+
+var_weekdaytn_time = np.mean(errors)
+stdv_weekdaytn=math.sqrt(var_weekdaytn_time)
+print('global stdv %.5f\n' % stdv_weekdaytn)
+stdv_weekday30mins = np.sqrt(np.mean(errors,0))
+print('stdv per time-step')
+for i in stdv_weekday30mins:
+    print('\t' + str(i))
+
 
 parameters_tn_th_ind = np.array([.2 ,.05,.7,.1] + [.8]*wd_length)
+errors = np.ones(np.shape(training_weekdays_norm))
 
-optimal_params_weekdaytn = minimize(model_weekdays_tn_th_ind_max, parameters_tn_th_ind, method='Nelder-Mead',
+#optimal_params_weekdaytn = minimize(model_weekdays_tn_th_ind_max, parameters_tn_th_ind, method='Nelder-Mead',
+#                                    tol=1e-6, options={'disp': True, 'maxfev': 100000})
+
+optimal_params_weekdaytn = minimize(model_tn_th_ind_max, 
+                                    parameters_tn_th_ind, 
+                                    args=(training_weekdays_norm, training_weekdays_isfull, errors),
+                                    method='Nelder-Mead',
                                     tol=1e-6, options={'disp': True, 'maxfev': 100000})
-var = optimal_params_weekdaytn.fun/np.size(training_weekdays_norm)
+
+
+var_weekdaytn_time = np.mean(errors)
+stdv_weekdaytn=math.sqrt(var_weekdaytn_time)
+print('global stdv %.5f\n' % stdv_weekdaytn)
+stdv_weekday30mins = np.sqrt(np.mean(errors,0))
+print('stdv per time-step')
+for i in stdv_weekday30mins:
+    print('\t' + str(i))
 
 
 
@@ -269,83 +220,10 @@ th_vec=optimal_params_weekdaytn.x[4:]
 th_vec[training_weekdays_isfull]
 
 
-# In[84]:
-
-
-#plt.hist(th_vec[training_weekdays_isfull],8)
-
-
-# In[137]:
-def plot_model_tn(loc_ar=.3, scale_ar=.05, loc_de=.8, scale_de=.1):
-    # arrivals
-    a_ar = -loc_ar/scale_ar
-    b_ar = (1-loc_ar)/scale_ar
-
-    # departures
-    a_de = -loc_de/scale_de
-    b_de = (1-loc_de)/scale_de
-
-
-    pdf_ar = truncnorm.pdf(time_tn, a_ar, b_ar, loc=loc_ar, scale=scale_ar)
-    pdf_de = truncnorm.pdf(time_tn, a_de, b_de, loc=loc_de, scale=scale_de)
-    cdf_ar = truncnorm.cdf(time_tn, a_ar, b_ar, loc=loc_ar, scale=scale_ar)
-    cdf_de = truncnorm.cdf(time_tn, a_de, b_de, loc=loc_de, scale=scale_de)
-
-    fig, ax = plt.subplots(2)
-    ax[0].plot(time, pdf_ar , '-b')
-    ax[0].plot(time, pdf_de, '-r')
-    ax[0].set_title('pdfs')
-
-    ax[1].plot(time, cdf_ar , '--b')
-    ax[1].plot(time, cdf_de, '--r')
-    ax[1].plot(time, cdf_ar-cdf_de, 'r')
-    ax[1].set_title('cdfs')
-
-
 # In[138]:
 
 
 plot_model_tn(optimal_params_weekdaytn.x[0],optimal_params_weekdaytn.x[1],optimal_params_weekdaytn.x[2],optimal_params_weekdaytn.x[3])
-
-
-# In[139]:
-
-
-def plot_model_tn_th(loc_ar=.3, scale_ar=.05, loc_de=.8, scale_de=.1,thresh=.8):
-    # arrivals
-    a_ar = -loc_ar/scale_ar
-    b_ar = (1-loc_ar)/scale_ar
-
-    # departures
-    a_de = -loc_de/scale_de
-    b_de = (1-loc_de)/scale_de
-
-
-    pdf_ar = truncnorm.pdf(time_tn, a_ar, b_ar, loc=loc_ar, scale=scale_ar)
-    pdf_de = truncnorm.pdf(time_tn, a_de, b_de, loc=loc_de, scale=scale_de)
-    cdf_ar = truncnorm.cdf(time_tn, a_ar, b_ar, loc=loc_ar, scale=scale_ar)
-    
-    ix_parking_full= np.argmax(cdf_ar>thresh)
-    pdf_ar[cdf_ar>thresh] =0
-    cdf_ar[cdf_ar>thresh] = thresh
-    cdf_ar = cdf_ar/thresh
-    
-    cdf_de = truncnorm.cdf(time_tn, a_de, b_de, loc=loc_de, scale=scale_de)
-
-    fig, ax = plt.subplots(2)
-    ax[0].plot(time, pdf_ar , '-b')
-    ax[0].plot(time, pdf_de, '-r')
-    ax[0].plot(0.5*ix_parking_full*np.array([1, 1]),[0, max(pdf_ar)],'--')
-    ax[0].set_title('pdfs')
-
-    ax[1].plot(time, cdf_ar , '--b')
-    ax[1].plot(time, cdf_de, '--r')
-    ax[1].plot(time, cdf_ar-cdf_de, 'r')
-    ax[1].plot(0.5*ix_parking_full*np.array([1, 1]),[0,1],'--')
-    ax[1].set_title('cdfs')
-
-
-# In[140]:
 
 
 plot_model_tn_th(optimal_params_weekdaytn.x[0],optimal_params_weekdaytn.x[1],optimal_params_weekdaytn.x[2],
@@ -507,143 +385,45 @@ for ii in range(0,len(training_weekdays_norm)):
 # ### FRIDAYS
 
 # In[147]:
-
-
-def model_fridays_tn(params): 
-    loc_ar = params[0]
-    scale_ar = params[1]
-    loc_de = params[2]
-    scale_de = params[3]
-    error = 0
-    # make tn for arrivals
-    arrival_cdf = tn_cdf(time_tn, loc_ar, scale_ar)
-    # make tn for departures
-    departure_cdf = tn_cdf(time_tn, loc_de, scale_de)
-    # compute CDF for arrivals
-    #arrival_cdf = generate_cdf(arrival_pdf)
-    # compute CDF for departures
-    #departure_cdf = generate_cdf(departure_pdf)
-    #res = np.array(arrival_cdf) - np.array(departure_cdf)
-    res =arrival_cdf - departure_cdf
-    res_n = res/sum(res)
-    
-    for ii in range(0,f_length):
-        day = training_fridays_norm[ii]
-        error += mean_squared_error(res_n, day)
-    return error
-
-def model_fridays_tn_th_max(params): 
-    loc_ar = params[0]
-    scale_ar = params[1]
-    loc_de = params[2]
-    scale_de = params[3]
-    thresh=params[4]
-
-    cdf_ar=tn_cdf(time_tn, loc_ar, scale_ar)
-    cdf_de=tn_cdf(time_tn, loc_de, scale_de)
-
-    cdf_ar[cdf_ar>thresh] = thresh
-    cdf_ar = cdf_ar/thresh
-
-    res = cdf_ar - cdf_de
-    res_n = res#/sum(res)
-  
-    error = 0  
-    for ii in range(0,f_length):
-        day = training_fridays_norm[ii]
-        error += mean_squared_error(res_n, day)
-    return error
-
-def model_fridays_tn_th_opt_max(params): 
-    loc_ar = params[0]
-    scale_ar = params[1]
-    loc_de = params[2]
-    scale_de = params[3]
-    thresh=params[4]
-
-    cdf_ar=tn_cdf(time_tn, loc_ar, scale_ar)
-    cdf_de=tn_cdf(time_tn, loc_de, scale_de)
-
-    cdf_ar_th=cdf_ar
-    cdf_ar_th[cdf_ar>thresh] = thresh
-    cdf_ar_th = cdf_ar_th/thresh
-
-    res = cdf_ar - cdf_de
-    res_n = res/sum(res)
-    
-    res_th = cdf_ar_th - cdf_de
-    res_th_n = res_th#/sum(res_th)
-  
-    error = 0  
-    for ii in range(0,f_length):
-        day = training_fridays_norm[ii]
-        dayisFull=training_fridays_isfull[ii]
-        #print(dayisFull)
-        if dayisFull:
-            error += mean_squared_error(res_th_n, day)
-        else:
-            error += mean_squared_error(res_n, day)           
-    return error
-
-def model_fridays_tn_th_ind_max(params): 
-    loc_ar = params[0]
-    scale_ar = params[1]
-    loc_de = params[2]
-    scale_de = params[3]
- 
-
-    cdf_ar=tn_cdf(time_tn, loc_ar, scale_ar)
-    cdf_de=tn_cdf(time_tn, loc_de, scale_de)
-
-    #cdf_ar_th=cdf_ar
-    #cdf_ar_th[cdf_ar>thresh] = thresh
-    #cdf_ar_th = cdf_ar_th/thresh
-
-    res = cdf_ar - cdf_de
-    res_n = res#/sum(res)
-    
-    #res_th = cdf_ar_th - cdf_de
-    #res_th_n = res_th/sum(res_th)
-  
-    error = 0  
-
-    for ii in range(0,f_length):
-        day = training_fridays_norm[ii]
-        dayisFull=training_fridays_isfull[ii]
-        
-        if dayisFull:
-            thresh=params[4+ii]
-            cdf_ar_th=cdf_ar
-            cdf_ar_th[cdf_ar>thresh] = thresh
-            cdf_ar_th = cdf_ar_th/thresh
-    
-            res_th = cdf_ar_th - cdf_de
-            res_th_n = res_th#/sum(res_th)
-            
-            error += mean_squared_error(res_th_n, day)
-        else:
-            error += mean_squared_error(res_n, day)           
-    return error
-
-# params order = a1, b1, a2, b2
-#parameters = np.array([ 2 , 20, 5, 80, 0.02])
-#optimal_params_friday = minimize(model_fridays, parameters, method='Nelder-Mead', tol=0.01)
-
-# params order: loc_ar=.3, scale_ar=.05, loc_de=.8, scale_de=.1, rescale
-#parameters_tn = np.array([.3 ,.05,.8,.1])
-#optimal_params_fridaytn = minimize(model_fridays_tn, parameters_tn, method='Nelder-Mead', tol=0.01)
-
-#parameters_tn = np.array([.2 ,.05,.7,.1])
-#optimal_params_fridaytn = minimize(model_fridays_tn, parameters_tn, method='Nelder-Mead',
-#                                    tol=1e-6, options={'disp': True})
 parameters_tn_th = np.array([.2 ,.05,.7,.1,.8])
-optimal_params_fridaytn_glo = minimize(model_fridays_tn_th_opt_max, parameters_tn_th, method='Nelder-Mead',
-                                    tol=1e-6, options={'disp': True})
-parameters_tn_th_ind = np.array([.2 ,.05,.7,.1] + [.8]*f_length)
+errors = np.ones(np.shape(training_fridays_norm))
 
-optimal_params_fridaytn = minimize(model_fridays_tn_th_ind_max, parameters_tn_th_ind, method='Nelder-Mead',
-                                    tol=1e-6, options={'disp': True, 'maxfev': 100000})
+optimal_params_fridaytn_glo = minimize(model_tn_th_max_args, 
+                                        parameters_tn_th,
+                                        args=(training_fridays_norm, errors),
+                                        method='Nelder-Mead',
+                                        tol=1e-6, options={'disp': True, 'maxfev': 10000})    
+    
+    
+var_fridaytn_time = np.mean(errors)
+stdv_fridaytn=math.sqrt(var_weekdaytn_time)
+print('global stdv %.5f\n' % stdv_fridaytn)
+stdv_friday30mins = np.sqrt(np.mean(errors,0))
+print('stdv per time-step')
+for i in stdv_friday30mins:
+    print('\t' + str(i))
 
+
+parameters_tn_th_ind = np.array([.2 ,.05,.7,.1] + [.8]*wd_length)
+errors = np.ones(np.shape(training_fridays_norm))
+
+#optimal_params_weekdaytn = minimize(model_weekdays_tn_th_ind_max, parameters_tn_th_ind, method='Nelder-Mead',
+#                                    tol=1e-6, options={'disp': True, 'maxfev': 100000})
+
+optimal_params_weekdaytn = minimize(model_tn_th_ind_max, 
+                                    parameters_tn_th_ind, 
+                                    args=(training_fridays_norm, training_fridays_isfull, errors),
+                                    method='Nelder-Mead',
+                                    tol=1e-6, options={'disp': True, 'maxfev': 100000})    
+    
+ 
+var_fridaytn_time = np.mean(errors)
+stdv_fridaytn=math.sqrt(var_weekdaytn_time)
+print('global stdv %.5f\n' % stdv_fridaytn)
+stdv_friday30mins = np.sqrt(np.mean(errors,0))
+print('stdv per time-step')
+for i in stdv_friday30mins:
+    print('\t' + str(i))
 
 # In[148]:
 
