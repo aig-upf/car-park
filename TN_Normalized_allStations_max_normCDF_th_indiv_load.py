@@ -801,8 +801,8 @@ ax[1].set_xlabel('Time (hour)')
 ax[1].set_ylabel('Probability')
 
 # CHECK THIS
-Area = integrate.simps(tn1_weekend_n) 
-tn1_weekend_n = tn1_weekend_n/Area
+#Area = integrate.simps(tn1_weekend_n) 
+#tn1_weekend_n = tn1_weekend_n/Area
 
 # for ii in range(len(training_weekends_norm)):
 #      ax[2].plot(time,training_weekends_norm[ii], linewidth='0.5')
