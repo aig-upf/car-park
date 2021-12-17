@@ -25,6 +25,17 @@ def get_days_of_protos_normalized(proto_name, df_):
         
     return days
 
+def get_dates_of_protos(proto_name, df_):
+    data_temp = df_[df_['Profile_3'] == proto_name] 
+    dates = []
+    for i in range(0,data_temp.shape[0], 48):
+        day = data_temp['Occupancy'][i:i+48]
+        t_date = data_temp.iloc[i]['Date']
+        if len(day) == 48:
+            dates.append(t_date)     
+    return dates
+
+
 def get_parkingfull_of_protos(proto_name, df_):
     data_temp = df_[df_['Profile_3'] == proto_name] 
     isfull = []
@@ -128,6 +139,30 @@ def model_tn_areaN_args(params,trainining_norm,errors):
         errors[ii,:] = np.power(res_n - day, 2)
     #return error
     return np.sum(errors)
+
+def model_tn_max_args(params,trainining_norm,errors): 
+    loc_ar = params[0]
+    scale_ar = params[1]
+    loc_de = params[2]
+    scale_de = params[3]
+ 
+    num_training_days = len(trainining_norm)
+    time_tn = np.linspace(0,23.5,48)/24
+    
+    cdf_ar=tn_cdf(time_tn, loc_ar, scale_ar)
+    cdf_de=tn_cdf(time_tn, loc_de, scale_de)
+
+    res = cdf_ar - cdf_de
+    res_n = res
+
+    #error = 0  
+    for ii in range(0,num_training_days):
+        day = trainining_norm[ii]
+        #error += np.sum(np.power(res_n - day, 2))
+        errors[ii,:] = np.power(res_n - day, 2)
+    #return error
+    return np.sum(errors)
+
 
 def model_tn_th_max_args(params,trainining_norm,errors): 
     loc_ar = params[0]
@@ -266,3 +301,23 @@ def plot_model_tn_th(loc_ar=.3, scale_ar=.05, loc_de=.8, scale_de=.1,thresh=.8):
     ax[1].plot(0.5*ix_parking_full*np.array([1, 1]),[0,1],'--')
     ax[1].set_title('cdfs')
     
+def printTimes(params,current_parking,timeString='WEEKDAYS'):
+    print("--------- "+timeString +" "+current_parking+" -----------")
+    loc_ar = params[0]*24
+    scale_ar = params[1]*24
+    loc_de = params[2]*24
+    scale_de = params[3]*24
+    
+    time = np.linspace(0,23.5,48)
+    time_tn=time/24
+
+    print(f'Mean Arrival Time   = {int(loc_ar):02.0f}:{int((loc_ar-int(loc_ar))*60):02.0f}h')
+    print(f'stdv Arrival        = {int(scale_ar):2.0f}:{int((scale_ar-int(scale_ar))*60):02.0f}h')
+    print(f'Mean Departure Time = {int(loc_de):02.0f}:{int((loc_de-int(loc_de))*60):02.0f}h')
+    print(f'stdv Departure      = {int(scale_de):2.0f}:{int((scale_de-int(scale_de))*60):02.0f}h')
+    if len(params)>4:
+        thresh=params[4]
+        if thresh<1:
+            cdf_ar = tn_cdf(time_tn, loc_ar/24, scale_ar/24)
+            time_parking_full= 0.5*np.argmax(cdf_ar>thresh)
+            print(f'Parking full        = {int(time_parking_full):02.0f}:{int((time_parking_full-int(time_parking_full))*60):02.0f}h')    

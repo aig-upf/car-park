@@ -23,7 +23,7 @@ df_column_name=['Parking Vilanova Renfe','Parking Sant Sadurní Renfe','Parking 
               'Parking Quatre Camins','Cerdanyola Universitat Renfe','Parking Granollers Renfe',
                 'Parking Martorell FGC','Parking Mollet Renfe','Parking Sant Quirze FGC',
                'Parking Prat del Ll.']
-current_parking_ix=1
+current_parking_ix=3
 # parkings which fill up: 3 QuatreCamins, 7 Mollet, 1 SantSadurni (sometimes),
 # problems on Weekend with 2 SantBoi, 4 Cerdanyola, 
 # bad data: 6 Martorell, 8 SantQuirze DO NOT USE
@@ -98,9 +98,12 @@ def tn_cdf(x, loc, scale):
 
 training_weekdays_norm  = get_days_of_protos_normalized("Weekday", df_training)
 training_weekdays_isfull  = get_parkingfull_of_protos("Weekday", df_training)
+training_weekdays_date  =  get_dates_of_protos("Weekday", df_training)
 training_fridays_norm  = get_days_of_protos_normalized("Friday", df_training)
 training_fridays_isfull  = get_parkingfull_of_protos("Friday", df_training)
+training_fridays_date  =  get_dates_of_protos("Friday", df_training)
 training_weekends_norm  = get_days_of_protos_normalized("Weekend", df_training)
+training_weekends_date  =  get_dates_of_protos("Weekday", df_training)
 training_weekends_norm = training_weekends_norm[:-1]
 # t = []
 # for i in range(0,len(training_weekends_norm)):
@@ -159,6 +162,8 @@ def model_weekdays_tn_th_ind_max(params):
 
 # params order = a1, b1, a2, b2, tresh
 
+
+
 parameters_tn_th = np.array([.2 ,.05,.7,.1,1])
 errors = np.ones(np.shape(training_weekdays_norm))
 
@@ -169,13 +174,13 @@ optimal_params_weekdaytn_glo = minimize(model_tn_th_max_args,
                                         tol=1e-6, options={'disp': True, 'maxfev': 10000})
 
 
-var_weekdaytn_time = np.mean(errors)
-stdv_weekdaytn=math.sqrt(var_weekdaytn_time)
-print('global stdv %.5f\n' % stdv_weekdaytn)
-stdv_weekday30mins = np.sqrt(np.mean(errors,0))
-print('stdv per time-step')
-for i in stdv_weekday30mins:
-    print('\t' + str(i))
+var_weekdaytn_time_glo = np.mean(errors)
+stdv_weekdaytn_glo=math.sqrt(var_weekdaytn_time_glo)
+print('global stdv %.5f\n' % stdv_weekdaytn_glo)
+stdv_weekday30mins_glo = np.sqrt(np.mean(errors,0))
+#print('stdv per time-step')
+#for i in stdv_weekday30mins:
+#    print('\t' + str(i))
 
 
 parameters_tn_th_ind = np.array([.2 ,.05,.7,.1] + [.8]*wd_length)
@@ -193,11 +198,11 @@ optimal_params_weekdaytn = minimize(model_tn_th_ind_max,
 
 var_weekdaytn_time = np.mean(errors)
 stdv_weekdaytn=math.sqrt(var_weekdaytn_time)
-print('global stdv %.5f\n' % stdv_weekdaytn)
+print('individual tresholds stdv %.5f\n' % stdv_weekdaytn)
 stdv_weekday30mins = np.sqrt(np.mean(errors,0))
-print('stdv per time-step')
-for i in stdv_weekday30mins:
-    print('\t' + str(i))
+#print('stdv per time-step')
+#for i in stdv_weekday30mins:
+#    print('\t' + str(i))
 
 
 
@@ -352,34 +357,40 @@ for ii in range(0,len(training_weekdays_norm)):
 
 
     dayisFull=training_weekdays_isfull[ii]
+    curr_date=training_weekends_date[ii]
     if dayisFull:
         print(optimal_params_weekdaytn.x[idx_th])
     
         ix_parking_full= np.argmax(cdf1_wd>optimal_params_weekdaytn.x[idx_th])
         time_parking_full= 0.5*ix_parking_full
         str_parking_full= f'{int(time_parking_full):02.0f}:{int((time_parking_full-int(time_parking_full))*60):02.0f}h'
-
-        print('Parking full        = '+str_parking_full)
+        print('Parking full: '+ curr_date +' '+str_parking_full)
         tn1_wd[cdf1_wd>optimal_params_weekdaytn.x[idx_th]] =0
         cdf1_wd[cdf1_wd>optimal_params_weekdaytn.x[idx_th]] = optimal_params_weekdaytn.x[idx_th]
         cdf1_wd = cdf1_wd/optimal_params_weekdaytn.x[idx_th]
     else:
         ix_parking_full=0
     resta_wd = np.array(cdf1_wd) - np.array(cdf2_wd)
-    prototype_math_weekday = resta_wd#/sum(resta_wd)
+    prototype_math_weekday = resta_wd
+    fsize=18
     fig = plt.figure(figsize=(18,10))
-    fig.suptitle("Normalized mathematical prototope from CDF subtraction - weekdayS ("+current_parking+")", fontsize=20)
+    plt.title("TN model CDF subtraction - WEEKDAY "+ curr_date +" ("+current_parking+")", fontsize=fsize)
     if dayisFull:
         plt.plot(0.5*ix_parking_full*np.array([1, 1]),[0,1],'--',label="Parking full "+str_parking_full)
     plt.grid(linestyle='dotted')
-    plt.xlabel("Time [h]", fontsize=18)
-    plt.ylabel("PDF & CDF", fontsize=18)
-    plt.yticks(fontsize=18)
-    plt.xticks(fontsize=18)
-    plt.plot(time, prototype_math_weekday, linewidth=3, color='red', label="(CDF1 - CDF2)*Rescale")
+    plt.xlabel("Time [h]", fontsize=fsize)
+    plt.ylabel("normalized (by max.) occupation", fontsize=fsize)
+    plt.yticks(fontsize=fsize)
+    plt.xticks(fontsize=fsize)
+    plt.plot(time, prototype_math_weekday-stdv_weekday30mins, linewidth=2, linestyle='--', color='blue')
+    plt.plot(time, prototype_math_weekday, linewidth=3, color='red', label="model curve")
+    plt.plot(time, prototype_math_weekday+stdv_weekday30mins, linewidth=2, linestyle='--', color='blue', label="±stdv")
     #for i in range(0,len(training_weekdays_norm)):
-    plt.plot(time, training_weekdays_norm[ii], linewidth=0.45)
-    plt.legend(fontsize=16);
+    plt.plot(time, training_weekdays_norm[ii], linewidth=0.5, label="trainig curves")
+    plt.legend(fontsize=fsize);
+
+
+
 
 
 # ### FRIDAYS
@@ -396,12 +407,12 @@ optimal_params_fridaytn_glo = minimize(model_tn_th_max_args,
     
     
 var_fridaytn_time = np.mean(errors)
-stdv_fridaytn=math.sqrt(var_weekdaytn_time)
-print('global stdv %.5f\n' % stdv_fridaytn)
-stdv_friday30mins = np.sqrt(np.mean(errors,0))
-print('stdv per time-step')
-for i in stdv_friday30mins:
-    print('\t' + str(i))
+stdv_fridaytn_glo=math.sqrt(var_weekdaytn_time)
+print('global stdv %.5f\n' % stdv_fridaytn_glo)
+stdv_friday30mins_glo = np.sqrt(np.mean(errors,0))
+#print('stdv per time-step')
+#for i in stdv_friday30mins:
+#    print('\t' + str(i))
 
 
 parameters_tn_th_ind = np.array([.2 ,.05,.7,.1] + [.8]*wd_length)
@@ -410,7 +421,7 @@ errors = np.ones(np.shape(training_fridays_norm))
 #optimal_params_weekdaytn = minimize(model_weekdays_tn_th_ind_max, parameters_tn_th_ind, method='Nelder-Mead',
 #                                    tol=1e-6, options={'disp': True, 'maxfev': 100000})
 
-optimal_params_weekdaytn = minimize(model_tn_th_ind_max, 
+optimal_params_fridaytn = minimize(model_tn_th_ind_max, 
                                     parameters_tn_th_ind, 
                                     args=(training_fridays_norm, training_fridays_isfull, errors),
                                     method='Nelder-Mead',
@@ -419,11 +430,11 @@ optimal_params_weekdaytn = minimize(model_tn_th_ind_max,
  
 var_fridaytn_time = np.mean(errors)
 stdv_fridaytn=math.sqrt(var_weekdaytn_time)
-print('global stdv %.5f\n' % stdv_fridaytn)
+print('individual threshold stdv %.5f\n' % stdv_fridaytn)
 stdv_friday30mins = np.sqrt(np.mean(errors,0))
-print('stdv per time-step')
-for i in stdv_friday30mins:
-    print('\t' + str(i))
+#print('stdv per time-step')
+#for i in stdv_friday30mins:
+#    print('\t' + str(i))
 
 # In[148]:
 
@@ -464,7 +475,7 @@ cdf2_fri=tn_cdf(time_tn, optimal_params_fridaytn.x[2], optimal_params_fridaytn.x
 resta = np.array(cdf1_fri) - np.array(cdf2_fri)
 prototype_math_friday = resta/sum(resta)
 fig = plt.figure(figsize=(18,10))
-fig.suptitle("PDF and CDF for occupying and freeing a slot - FRIDAYS ("+current_parking+")", fontsize=20)
+plt.title("PDF and CDF for occupying and freeing a slot - FRIDAYS ("+current_parking+")", fontsize=20)
 plt.plot(time, cdf1_fri, label="CDF Slot occupied")
 plt.plot(time, cdf2_fri, label="CDF Slot free")
 plt.plot(time, tn1_fri/sum(tn1_fri), label="Probability that a slot gets occupied")
@@ -508,7 +519,7 @@ resta_fri = np.array(cdf1_fri) - np.array(cdf2_fri)
 prototype_math_friday = resta_fri#/sum(resta_fri)
 
 fig = plt.figure(figsize=(18,10))
-fig.suptitle("PDF and CDF for occupying and freeing a slot - FRIDAYS ("+current_parking+")", fontsize=20)
+plt.title("PDF and CDF for occupying and freeing a slot - FRIDAYS ("+current_parking+")", fontsize=20)
 plt.plot(time2, cdf1_fri, label="CDF Slot occupied")
 plt.plot(time2, cdf2_fri, label="CDF Slot free")
 plt.plot(time2, tn1_fri/sum(tn1_fri), label="Probability that a slot gets occupied")
@@ -526,7 +537,7 @@ plt.legend(fontsize=16, loc="upper left");
 
 
 fig = plt.figure(figsize=(18,10))
-fig.suptitle("Normalized mathematical prototope from CDF subtraction - FRIDAYS ("+current_parking+")", fontsize=20)
+plt.title("Normalized mathematical prototope from CDF subtraction - FRIDAYS ("+current_parking+")", fontsize=20)
 plt.grid(linestyle='dotted')
 plt.xlabel("Time [h]", fontsize=18)
 plt.ylabel("PDF & CDF", fontsize=18)
@@ -537,6 +548,8 @@ plt.plot(time, prototype_math_friday, linewidth=3, color='red', label="(CDF1 - C
 for i in range(0,len(training_fridays_norm)):
     plt.plot(time, training_fridays_norm[i], linewidth=0.45)
 plt.legend(fontsize=16);
+
+
 
 
 # In[155]:
@@ -554,6 +567,7 @@ for ii in range(0,len(training_fridays_norm)):
 
 
     dayisFull=training_fridays_isfull[ii]
+    curr_date=training_fridays_date[ii]
     if dayisFull:
         print(optimal_params_fridaytn.x[idx_th])
     
@@ -561,7 +575,7 @@ for ii in range(0,len(training_fridays_norm)):
         time_parking_full= 0.5*ix_parking_full
         str_parking_full= f'{int(time_parking_full):02.0f}:{int((time_parking_full-int(time_parking_full))*60):02.0f}h'
 
-        print('Parking full        = '+str_parking_full)
+        print('Parking full: '+ curr_date +' '+str_parking_full)
         tn1_fri[cdf1_fri>optimal_params_fridaytn.x[idx_th]] =0
         cdf1_fri[cdf1_fri>optimal_params_fridaytn.x[idx_th]] = optimal_params_fridaytn.x[idx_th]
         cdf1_fri = cdf1_fri/optimal_params_fridaytn.x[idx_th]
@@ -569,19 +583,25 @@ for ii in range(0,len(training_fridays_norm)):
         ix_parking_full=0
     resta_fri = np.array(cdf1_fri) - np.array(cdf2_fri)
     prototype_math_friday = resta_fri#/sum(resta_fri)
+    
+    fsize=18
     fig = plt.figure(figsize=(18,10))
-    fig.suptitle("Normalized mathematical prototope from CDF subtraction - FRIDAYS ("+current_parking+")", fontsize=20)
+    plt.title("TN model CDF subtraction - FRIDAYS "+ curr_date +" ("+current_parking+")", fontsize=fsize)
     if dayisFull:
         plt.plot(0.5*ix_parking_full*np.array([1, 1]),[0,.06],'--',label="Parking full "+str_parking_full)
     plt.grid(linestyle='dotted')
-    plt.xlabel("Time [h]", fontsize=18)
-    plt.ylabel("PDF & CDF", fontsize=18)
-    plt.yticks(fontsize=18)
-    plt.xticks(fontsize=18)
-    plt.plot(time, prototype_math_friday, linewidth=3, color='red', label="(CDF1 - CDF2)*Rescale")
+    plt.xlabel("Time [h]", fontsize=fsize)
+    plt.ylabel("normalized (by max.) occupation", fontsize=fsize)
+    plt.yticks(fontsize=fsize)
+    plt.xticks(fontsize=fsize)
+    plt.plot(time2, prototype_math_friday-stdv_friday30mins, linewidth=2, linestyle='--', color='blue')
+    plt.plot(time, prototype_math_friday, linewidth=3, color='red', label="model curve")
+    plt.plot(time2, prototype_math_friday+stdv_friday30mins, linewidth=2, linestyle='--', color='blue', label="±stdv")
+
+
     #for i in range(0,len(training_fridays_norm)):
-    plt.plot(time, training_fridays_norm[ii], linewidth=0.45)
-    plt.legend(fontsize=16);
+    plt.plot(time, training_fridays_norm[ii], linewidth=0.45, label="trainig curve")
+    plt.legend(fontsize=fsize);
 
 
 # ### WEEKENDS
@@ -597,68 +617,40 @@ for i in range(0,len(training_weekends_norm)):
         t.append(training_weekends_norm[i])
         
 training_weekends_norm = t
-we_length = len(t)
-
-def model_weekends_tn(params): 
-    loc_ar = params[0]
-    scale_ar = params[1]
-    loc_de = params[2]
-    scale_de = params[3]
-    error = 0
-    # make tn for arribals
-    #arrival_pdf = tn(time_tn, loc_ar, scale_ar)
-    # make tn for departures
-    #departure_pdf = tn(time_tn, loc_de, scale_de)
-    # compute CDF for arribals
-    #arrival_cdf = generate_cdf(arrival_pdf)
-    # compute CDF for departures
-    #departure_cdf = generate_cdf(departure_pdf)
-    
-    arrival_cdf = tn_cdf(time_tn, loc_ar, scale_ar)
-    departure_cdf = tn_cdf(time_tn, loc_de, scale_de)
-    departure_cdf=departure_cdf/max(departure_cdf)
-    res =arrival_cdf - departure_cdf
-    
-    #res = np.array(arrival_cdf) - np.array(departure_cdf)
-    res_n = res#/sum(res)
-    
-    #print(loc_de)
-    #print(scale_de)
-    #print(departure_cdf)
-    
-    for ii in range(0,we_length):
-        day = training_weekends_norm[ii]
-        error += mean_squared_error(res_n, day)
-        
-        
-        
-    #plot_model_tn_pres(loc_ar, scale_ar, loc_de, scale_de) 
-    #print("mua = " + str(loc_ar) + "\tstda  = " + str(scale_ar))
-    #print("mus = " + str(loc_de) + "\tstds = " + str(scale_de))
-    #print("Err = " + str(error))     
-
-    return error
+#we_length = len(t)
 
 
-# params order = a1, b1, a2, b2
-#parameters = np.array([ 2 , 20, 5, 80, 2])
-#optimal_params_weekend = minimize(model_weekends, parameters, method='Nelder-Mead', tol=0.01)
 
-# params order: loc_ar=.3, scale_ar=.05, loc_de=.8, scale_de=.1, rescale
 parameters_tn = np.array([.3 ,.1,.8,0.5])
-#optimal_params_weekendtn = minimize(model_weekends_tn, parameters_tn, method='Nelder-Mead', tol=0.01)
-#optimal_params_weekendtn = minimize(model_weekends_tn, parameters_tn, method='Nelder-Mead',
-#                                    tol=1e-6, options={'disp': True})
+errors = np.ones(np.shape(training_weekends_norm))    
 if ((current_parking == "SantBoi") or (current_parking == "Cerdanyola")): 
-    optimal_params_weekendtn = minimize(model_weekends_tn, parameters_tn, method='SLSQP',
-                                        bounds=((0, None), (0, None),(0, None),(0, None)),
-                                        tol=1e-6, options={'disp': True})
-else:
-    optimal_params_weekendtn = minimize(model_weekends_tn, parameters_tn, method='Nelder-Mead',
-                                        tol=1e-6, options={'disp': True, 'maxfev': 100000})  
+    optimal_params_weekendtn = minimize(model_tn_max_args,
+                                    parameters_tn, 
+                                    args=(training_weekends_norm, errors),
+                                    method='SLSQP',
+                                    bounds=((0, None), (0, None),(0, None),(0, None)),
+                                    tol=1e-6, options={'disp': True, 'maxfev': 100000})
+else: 
+    optimal_params_weekendtn = minimize(model_tn_max_args,
+                                    parameters_tn, 
+                                    args=(training_weekends_norm, errors),
+                                    method='Nelder-Mead',
+                                    tol=1e-6, options={'disp': True, 'maxfev': 100000})
+
+# In[197]:
 
 
-# In[198]:
+var_weekendtn = np.mean(errors)
+stdv_weekendtn=math.sqrt(var_weekendtn)
+print('global stdv %.5f\n' % stdv_weekendtn)
+stdv_weekend30mins = np.sqrt(np.mean(errors,0))
+#print('stdv per time-step')
+#for i in stdv_weekend30mins:
+#    print('\t' + str(i))
+
+
+
+# In[199]:
 
 
 #weekend_math_params = optimal_params_weekend.x
@@ -707,17 +699,29 @@ plt.legend(fontsize=16);
 # In[202]:
 
 
+fsize=18
 fig = plt.figure(figsize=(18,10))
-fig.suptitle("Normalized mathematical prototope from CDF subtraction - WEEKENDS ("+current_parking+")", fontsize=20)
+plt.title("TN model CDF subtraction - WEEKENDS ("+current_parking+")", fontsize=fsize)
 plt.grid(linestyle='dotted')
-plt.xlabel("Time [h]", fontsize=18)
-plt.ylabel("PDF & CDF", fontsize=18)
-plt.yticks(fontsize=18)
-plt.xticks(fontsize=18)
-plt.plot(time, prototype_math_weekend, linewidth=3, color='red', label="(CDF1 - CDF2)*Rescale")
-for i in range(0,len(training_weekends_norm)):
-    plt.plot(time, training_weekends_norm[i], linewidth=0.45)
-plt.legend(fontsize=16)
+plt.xlabel("Time [h]", fontsize=fsize)
+plt.ylabel("normalized occupation", fontsize=fsize)
+plt.yticks(fontsize=fsize)
+plt.xticks(fontsize=fsize)
+plt.plot(time2, prototype_math_weekend-stdv_weekend30mins, linewidth=2, linestyle='--', color='blue')
+plt.plot(time2, prototype_math_weekend, linewidth=3, color='red', label="model curve")
+plt.plot(time2, prototype_math_weekend+stdv_weekend30mins, linewidth=2, linestyle='--', color='blue', label="±stdv")
+
+for i in range(0,len(training_fridays_norm)):
+    if i==0:
+        plt.plot(time, training_weekends_norm[i], linewidth=0.5, color='gray', label="trainig curves")
+    else:
+        plt.plot(time, training_weekends_norm[i], linewidth=0.5, color='gray')
+
+plt.xlim([0,23.5])
+plt.legend(fontsize=fsize, loc="upper left");
+#fig.savefig('Training_'+current_parking+'WEEKEND.pdf',bbox_inches='tight');
+
+
 
 
 # In[244]:
