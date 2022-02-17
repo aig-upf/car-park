@@ -77,23 +77,7 @@ from sklearn.metrics import mean_squared_error
 time = np.linspace(0,23.5,48)
 time_tn=time/24
 
-def generate_cdf(data):
-    cumulative=[0]
-    for ii in range(1,len(data)):
-        cumulative.append(sum(data[:ii]))
-    return cumulative/sum(data)
 
- 
-def tn(x, loc, scale):
-    a = -loc/scale
-    b = (1-loc)/scale
-    return truncnorm.pdf(x, a, b, loc, scale)
-
-
-def tn_cdf(x, loc, scale):
-    a = -loc/scale
-    b = (1-loc)/scale
-    return truncnorm.cdf(x, a, b, loc, scale)
 
 
 training_weekdays_norm  = get_days_of_protos_normalized("Weekday", df_training)

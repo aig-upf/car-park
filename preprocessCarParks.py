@@ -62,7 +62,7 @@ for current_parking_ix in range(0,len(available_parkings)):
     df['Occupancy'] = df['Free slots'].map(lambda x: max_value-x)
     axis_ylim = max_value+20
     axis_ylim_low = 0
-    print('Y lim: ' ,axis_ylim)
+    #print('Y lim: ' ,axis_ylim)
     df.head()
     
     
@@ -667,24 +667,24 @@ for current_parking_ix in range(0,len(available_parkings)):
     
     
     
-    print('______MEAN________')
-    print(mean_Monday[0])
-    print(mean_Tuesday[0])
-    print(mean_Wednesday[0])
-    print(mean_Thursday[0])
-    print(mean_Friday[0])
-    print(mean_Saturday[0])
-    print(mean_Sunday[0])
+   # print('______MEAN________')
+   # print(mean_Monday[0])
+   # print(mean_Tuesday[0])
+   # print(mean_Wednesday[0])
+   # print(mean_Thursday[0])
+   # print(mean_Friday[0])
+   # print(mean_Saturday[0])
+   # print(mean_Sunday[0])
     
-    print('______STDV________')
+   # print('______STDV________')
     
-    print(np.std(error_monday_stat))
-    print(np.std(error_tuesday_stat))
-    print(np.std(error_wednesday_stat))
-    print(np.std(error_thursday_stat))
-    print(np.std(error_friday_stat))
-    print(np.std(error_saturday_stat))
-    print(np.std(error_sunday_stat))
+   # print(np.std(error_monday_stat))
+   # print(np.std(error_tuesday_stat))
+   # print(np.std(error_wednesday_stat))
+   # print(np.std(error_thursday_stat))
+   # print(np.std(error_friday_stat))
+   # print(np.std(error_saturday_stat))
+   # print(np.std(error_sunday_stat))
     
     
     
@@ -744,10 +744,10 @@ for current_parking_ix in range(0,len(available_parkings)):
     df_prediction_mean['Area'] = df_prediction_mean['Date'].apply(lambda x: Area_by_date(x))
     df_prediction_mean['MaxV'] = df_prediction_mean['Date'].apply(lambda x: Max_by_date(x))
     df_prediction_mean['Normalized_occupancy'] = df_prediction_mean.apply(lambda x: df_normalization(x.Occupancy_mod, x.MaxV), axis=1)
+    df_prediction_mean['Area_Normalized_occupancy'] = df_prediction_mean.apply(lambda x: df_normalization(x.Occupancy_mod, x.Area), axis=1)
     df_normalized = df_prediction_mean[['Date', 'hour','MonthNumber', 
-                                        'Normalized_occupancy', 'Weekday', 'Profile_3', 
+                                        'Normalized_occupancy','Area_Normalized_occupancy', 'Weekday', 'Profile_3', 
                                         'Occupancy_mod', 'Area', 'MaxV', 'Occupancy','Free slots']].copy()
-    
     
     
     

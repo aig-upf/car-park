@@ -25,6 +25,18 @@ def get_days_of_protos_normalized(proto_name, df_):
         
     return days
 
+
+def get_days_of_protos_areanormalized(proto_name, df_):
+    data_temp = df_[df_['Profile_3'] == proto_name] 
+    days = []
+    for i in range(0,data_temp.shape[0], 48):
+        day = data_temp['Area_Normalized_occupancy'][i:i+48]
+        if len(day) == 48:
+            days.append(day)
+        
+    return days
+
+
 def get_dates_of_protos(proto_name, df_):
     data_temp = df_[df_['Profile_3'] == proto_name] 
     dates = []
