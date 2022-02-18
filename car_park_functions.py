@@ -250,6 +250,8 @@ def subplot_training(fig, ax, xx, yy, proto_data, test_days, day, proto_name,axi
     ax[xx,yy].set_xlabel('Time (hours)', fontsize=16)
     ax[xx,yy].set_ylabel('Occupancy', fontsize=16)
     
+
+
     
 def plot_model_tn(loc_ar=.3, scale_ar=.05, loc_de=.8, scale_de=.1):
     # arrivals
@@ -333,3 +335,84 @@ def printTimes(params,current_parking,timeString='WEEKDAYS'):
             cdf_ar = tn_cdf(time_tn, loc_ar/24, scale_ar/24)
             time_parking_full= 0.5*np.argmax(cdf_ar>thresh)
             print(f'Parking full        = {int(time_parking_full):02.0f}:{int((time_parking_full-int(time_parking_full))*60):02.0f}h')    
+            
+            
+def compute_testing_prop_errorM(testing_days, proto_data, m_value):
+    errors = np.zeros(48)
+    n_test_days = len(testing_days)
+    proto = np.array(proto_data)
+    
+    for i in range(0, n_test_days):
+        day = np.array(testing_days[i])
+        er = np.array((np.absolute(proto - day)/m_value)*100)
+        errors += er
+    return errors/n_test_days
+
+def subplotCDFsubtractionErr(fig, ax, axx, axy, x, error, mean, title, day ):
+    ax[axx,axy].plot(x, error, color="tomato", linewidth=2, zorder=10, label='Proportional error')
+    ax[axx,axy].plot(x, mean, linewidth=1, linestyle='--' ,color='black', label='Mean error')
+    ax[axx,axy].grid(linestyle='dotted')
+    ax[axx,axy].set_ylabel('Proportional error %', fontsize=20)
+    ax[axx,axy].set_xlabel('Hours', fontsize=20)
+    ax[axx,axy].set_title(title , fontsize=20, pad=10)
+    ax[axx,axy].set_ylim((0,1.1*max(error)))
+    ax[axx,axy].legend(fontsize=16)
+    ax[axx,axy].tick_params( labelsize=15)
+    
+
+
+def real_timing_predition(fig, ax, axx, day, tn_proto, real_day, scaled_proto, Prototype, limit_hour, t_date, current_parking="LABEL PARKING"):
+    time = np.linspace(0,23.5,48)
+    fig.suptitle('Real time prediction Scaling mathematical and mean proto for Testing '
+                 + day + ' ' +t_date + ' ('+ current_parking+')', fontsize='18')
+    ax[axx].plot(time, real_day.values, linestyle='dashdot', linewidth=2, label='Real ' + day)
+    ax[axx].plot(time, tn_proto,'--',color='grey', label='TN prototype (not scaled)')
+    ax[axx].plot(time, scaled_proto, color='green', linewidth=2, label='TN proto (scaled)')
+    ax[axx].plot(time, Prototype, color='orange', linewidth=2, label='Stat. scaled proto')
+    ax[axx].axvline(x=limit_hour, linestyle='--', color='grey', linewidth=2, label='Moment of prediction')
+    ax[axx].axvspan(0, limit_hour, facecolor='grey', alpha=0.2, label='Known Activity')
+    ax[axx].grid(linestyle='dotted', linewidth='0.5', color='grey')
+    ax[axx].legend(fontsize=9)
+    ax[axx].set_ylim([0,1.1*max([max(real_day.values),max(tn_proto),max(scaled_proto),max(Prototype)])])
+    ax[axx].set_xlabel('Hour', fontsize=14)
+    ax[axx].set_ylabel('Occupancy', fontsize=14)
+
+def errors_plottingM(fig, ax, axx, scaled_proto, Prototype, real_day, day, limit_hour, m_value):
+    #Computing Errors
+    time = np.linspace(0,23.5,48)
+    limit_hour = limit_hour*2
+    tn_scaled_error = (np.absolute((np.array(scaled_proto) - np.array(real_day.values)))/m_value)*100
+    mean_scaled_error = (np.absolute((np.array(Prototype) - np.array(real_day.values)))/m_value)*100
+
+    tn_s_error_mean = [np.mean(tn_scaled_error[limit_hour:])]*len(tn_scaled_error)
+    mean_s_error_mean = [np.mean(mean_scaled_error[limit_hour:])]*len(mean_scaled_error)
+
+    #Second plot
+#     time = time[limit_hour:]
+    ax[axx].plot(time[limit_hour:], tn_scaled_error[limit_hour:], color='tomato', label='TN scaling error')
+    ax[axx].plot(time[limit_hour:],tn_s_error_mean[limit_hour:], '--',color='tomato', label='TN Mean prop. error')
+    ax[axx].plot(time[limit_hour:],mean_scaled_error[limit_hour:], color='blueviolet', label='Proto scaling error')
+    ax[axx].plot(time[limit_hour:],mean_s_error_mean[limit_hour:], '--',color='blueviolet', label='Proto. Mean prop. error')
+    ax[axx].grid(linestyle='dotted', linewidth='0.5', color='grey')
+    ax[axx].axvline(x=limit_hour/2, linestyle='--', color='grey', linewidth=2, label='Moment of prediction')
+    ax[axx].axvspan(0, limit_hour/2, facecolor='grey', alpha=0.2, label='Known Activity', zorder=4)
+    ax[axx].legend(fontsize=12)
+    ax[axx].set_ylim([0,1.1*max(max(tn_scaled_error[limit_hour:]),max(mean_scaled_error[limit_hour:]))])
+    ax[axx].set_xlabel('Hour', fontsize=14)
+    ax[axx].set_ylabel('Proportional error (%)', fontsize=14)
+
+    print('Real ' + day + ' scaled prtotype error: ', round(100*mean_s_error_mean[0])/100, '%')
+    print('Real ' + day + ' scaled prtotype STDV: ', np.std(mean_scaled_error[limit_hour:]))
+
+    print('Real ' + day + ' scaled TN error: ', round(100*tn_s_error_mean[0])/100, '%')
+    print('Real ' + day + ' scaled TN STDV: ', np.std(tn_scaled_error[limit_hour:]))
+    print('_____________________________________________________________')
+
+def get_scaling_factor(limit_hour, test_day, proto):
+    if limit_hour < 6:
+        return 1
+    index = limit_hour*2
+    current_real_data = test_day.values[index]
+    proto_value = proto[index]
+    scaling = current_real_data/proto_value
+    return scaling
