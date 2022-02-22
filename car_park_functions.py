@@ -416,3 +416,26 @@ def get_scaling_factor(limit_hour, test_day, proto):
     proto_value = proto[index]
     scaling = current_real_data/proto_value
     return scaling
+
+
+def generate_mean_variance(accumulated_date, accumulated_free_slots):
+    aux_dict = {};
+    for ii in np.arange(len(accumulated_date)):
+        free_slots = list(accumulated_free_slots[ii].iat)
+        hour = list(accumulated_free_slots[ii].index)
+        for jj in np.arange(len(free_slots)):
+            current_hour = hour[jj]
+            if current_hour not in aux_dict:
+                aux_dict[current_hour] = []
+            aux_dict[current_hour].append(free_slots[jj])
+    return aux_dict
+
+def compute_mean_variance(aux_dict):
+    domain = np.linspace(0,23,47)
+    var_vec = []; mean_vec = []; hour_vec=[];
+    for ii in domain:
+        if ii in aux_dict:
+            var_vec.append(np.var(list(aux_dict[ii])))
+            mean_vec.append(np.mean(list(aux_dict[ii])))
+            hour_vec.append(ii)
+    return var_vec, mean_vec, hour_vec
