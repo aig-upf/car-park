@@ -330,7 +330,7 @@ def printTimes(params,current_parking,timeString='WEEKDAYS'):
     print(f'Mean Departure Time = {int(loc_de):02.0f}:{int((loc_de-int(loc_de))*60):02.0f}h')
     print(f'stdv Departure      = {int(scale_de):2.0f}:{int((scale_de-int(scale_de))*60):02.0f}h')
     if len(params)>4:
-        thresh=params[4]
+        thresh=np.mean(params[4:])
         if thresh<1:
             cdf_ar = tn_cdf(time_tn, loc_ar/24, scale_ar/24)
             time_parking_full= 0.5*np.argmax(cdf_ar>thresh)
