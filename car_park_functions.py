@@ -338,7 +338,7 @@ def plot_model_tn_thDisc(loc_ar=.3, scale_ar=.05, loc_de=.8, scale_de=.1,thresh=
     ix_parking_full= np.argmax(cdf_ar>thresh)
     t_parking_full=np.interp(thresh,cdf_ar,time)
     time_th=np.insert(time,ix_parking_full,t_parking_full)
-
+  
     pdf_ar_orig=pdf_ar.copy()
     pdf_ar=np.insert(pdf_ar,ix_parking_full,np.interp(t_parking_full,time,pdf_ar))
     pdf_ar_excees=pdf_ar.copy()
@@ -351,17 +351,22 @@ def plot_model_tn_thDisc(loc_ar=.3, scale_ar=.05, loc_de=.8, scale_de=.1,thresh=
     masktn_arr_excees[:ix_parking_full] =False
     
  
-    cdf_ar=np.insert(cdf_ar,ix_parking_full,thresh)  
+    cdf_ar=np.insert(cdf_ar,ix_parking_full,thresh)
+    cdf_ar_withExcess=cdf_ar.copy()
     cdf_ar[cdf_ar>thresh] = thresh
     cdf_ar = cdf_ar/thresh
+    cdf_ar_withExcess=cdf_ar_withExcess/thresh
     
     cdf_de = truncnorm.cdf(time_tn, a_de, b_de, loc=loc_de, scale=scale_de)
     cdf_de=np.insert(cdf_de,ix_parking_full,np.interp(t_parking_full,time,cdf_de))  
+    
+    ymin=-0.01
+    ymax=max(pdf_ar_orig/sum(pdf_ar_orig))*1.05
 
     fig, ax = plt.subplots(2,figsize=(18,10))
     ax[0].plot(time_th[masktn_arr], pdf_ar[masktn_arr]/sum(pdf_ar_orig) , '-b',label='pdf TN arrival')
     ax[0].plot(time, pdf_de/sum(pdf_de), '-r',label='pdf TN departure')
-    ax[0].plot(t_parking_full*np.array([1, 1]),[0,max(pdf_ar_orig/sum(pdf_ar_orig))],'--',label="Parking full")
+    ax[0].plot(t_parking_full*np.array([1, 1]),[ymin,ymax],'--',linewidth=3,label="Parking full")
     ax[0].plot(time_th[masktn_arr_excees], pdf_ar_excees[masktn_arr_excees]/sum(pdf_ar_orig) , '-.k',
                label='pdf cars don''t fit')
     ax[0].set_title('pdfs', fontsize=fsize)
@@ -369,20 +374,24 @@ def plot_model_tn_thDisc(loc_ar=.3, scale_ar=.05, loc_de=.8, scale_de=.1,thresh=
     ax[0].set_ylabel('probability', fontsize = fsize)
     ax[0].grid(which='major',linestyle='dotted')
     ax[0].set_xlim([0,23.5])
+    ax[0].set_ylim([ymin,ymax])
     
-
+    ymin=-0.06
+    ymax=max(cdf_ar_withExcess)*1.05
     ax[1].plot(time_th, cdf_ar , '--b',label='cdf TN arrival')
     ax[1].plot(time_th, cdf_de, '--r',label='cdf TN departure')
-    ax[1].plot(time_th, cdf_ar-cdf_de, 'r',label='model (arrival-departure)')
-    ax[1].plot(t_parking_full*np.array([1, 1]),[0,1],'--',label="Parking full")
+    ax[1].plot(time_th, cdf_ar-cdf_de, 'r',linewidth=2,label='model (arrival-departure)')
+    ax[1].plot(t_parking_full*np.array([1, 1]),[ymin,ymax],'--',linewidth=3,label="Parking full")
+    ax[1].plot(time_th[masktn_arr_excees], cdf_ar_withExcess[masktn_arr_excees] , '-.k',
+               label='cdf cars don''t fit')
     ax[1].set_title('cdfs', fontsize=fsize)
     ax[1].legend(fontsize=fsize, loc="upper left")
     ax[1].grid(which='major',linestyle='dotted')
     ax[1].set_xlim([0,23.5])
+    ax[1].set_ylim([ymin,ymax])
     ax[1].set_xlabel('hour', fontsize = fsize)
     ax[1].set_ylabel('porp. of cars', fontsize = fsize)  
-    return fig    
-    
+    return fig
 def printTimes(params,current_parking,timeString='WEEKDAYS'):
     print("--------- "+timeString +" "+current_parking+" -----------")
     loc_ar = params[0]*24
