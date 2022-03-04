@@ -553,7 +553,7 @@ def compute_mean_variance(aux_dict):
             hour_vec.append(ii)
     return var_vec, mean_vec, hour_vec
 
-def calcRunningPredcitionError(t_days,hist_weekday_proto,tn_proto,max_value,starting_hour=7):
+def calcRunningPredcitionError(t_days,statistic_proto,tn_proto,max_value,starting_hour=7):
     limit_hour_vec = np.arange (starting_hour, 23, 0.5)
     tn_running_error_vec=np.zeros((len(limit_hour_vec),len(t_days)))
     proto_running_error_vec=np.zeros((len(limit_hour_vec),len(t_days)))
@@ -562,12 +562,43 @@ def calcRunningPredcitionError(t_days,hist_weekday_proto,tn_proto,max_value,star
         cont=0
         for limit_hour in limit_hour_vec:
             tn_scaling = get_scaling_factor_and_constant(limit_hour, t_days[i], tn_proto)
-            stat_scaling = get_scaling_factor_and_constant(limit_hour, t_days[i], hist_weekday_proto.values)
+            stat_scaling = get_scaling_factor_and_constant(limit_hour, t_days[i], statistic_proto.values)
             scaled_tn_proto = tn_proto * tn_scaling.x[1]+tn_scaling.x[0]
-            scaled_stat_proto = hist_weekday_proto.values * stat_scaling.x[1]+stat_scaling.x[0]
+            scaled_stat_proto = statistic_proto.values * stat_scaling.x[1]+stat_scaling.x[0]
             [tn_running_error_vec[cont,i],proto_running_error_vec[cont,i]]=errors_calc(scaled_tn_proto, scaled_stat_proto, t_days[i], limit_hour, max_value)
             cont=cont+1
     return [tn_running_error_vec,proto_running_error_vec]
+
+def calcRunningPredcitionErrorTH(t_days,statistic_proto,tn_proto,tn_arr_proto,tn_dep_proto,
+                                 max_value,starting_hour=7):
+    limit_hour_vec = np.arange (starting_hour, 23, 0.5)
+    tn_running_error_vec=np.zeros((len(limit_hour_vec),len(t_days)))
+    proto_running_error_vec=np.zeros((len(limit_hour_vec),len(t_days)))
+
+    for i in range(0,len(t_days)):
+        cont=0
+        for limit_hour in limit_hour_vec:
+            tn_scaling = get_scaling_factor_and_constant(limit_hour, t_days[i], tn_proto)
+            tn_arr_scaling = get_scaling_factor_and_constant(limit_hour, t_days[i], tn_arr_proto)
+            stat_scaling = get_scaling_factor_and_constant(limit_hour, t_days[i], statistic_proto.values)
+
+            scaled_tn_proto = tn_proto * tn_scaling.x[1]+tn_scaling.x[0]
+            scaled_tn_arr_proto = tn_arr_proto * tn_arr_scaling.x[1]+tn_arr_scaling.x[0]
+            scaled_tn_dep_proto = tn_dep_proto * tn_arr_scaling.x[1]
+
+            if max(scaled_tn_arr_proto)>max_value:
+                #cars_could_not_park=max(scaled_tn_arr_proto[scaled_tn_arr_proto >max_value])-max_value
+                #print(round(cars_could_not_park), "cars could not park")
+                scaled_tn_arr_proto[scaled_tn_arr_proto >max_value]=max_value
+                scaled_tn_dep_proto=scaled_tn_dep_proto/max(scaled_tn_dep_proto)*(max_value-tn_arr_scaling.x[0])
+
+            scaled_tn_proto2=scaled_tn_arr_proto-scaled_tn_dep_proto
+            scaled_stat_proto = statistic_proto.values * stat_scaling.x[1]+stat_scaling.x[0]
+            [tn_running_error_vec[cont,i],proto_running_error_vec[cont,i]]= \
+                errors_calc(scaled_tn_proto2, scaled_stat_proto, t_days[i], limit_hour, max_value)
+            cont=cont+1
+    return [tn_running_error_vec,proto_running_error_vec]
+
 
 def model_fit(params,data_curve,model_curve):
     const = params[0]
