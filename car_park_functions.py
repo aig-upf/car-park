@@ -8,6 +8,8 @@ Created on Fri Dec  3 10:49:06 2021
 
 from matplotlib import pyplot as plt
 from scipy.stats import truncnorm
+from scipy.optimize import minimize
+from sklearn.metrics import mean_squared_error
 import numpy as np
 
 import calendar
@@ -522,7 +524,7 @@ def errors_plottingM(fig, ax, axx, scaled_proto, Prototype, real_day, day, limit
 def get_scaling_factor(limit_hour, test_day, proto):
     if limit_hour < 6:
         return 1
-    index = limit_hour*2
+    index = int(limit_hour*2)
     current_real_data = test_day.values[index]
     proto_value = proto[index]
     scaling = current_real_data/proto_value
@@ -550,3 +552,65 @@ def compute_mean_variance(aux_dict):
             mean_vec.append(np.mean(list(aux_dict[ii])))
             hour_vec.append(ii)
     return var_vec, mean_vec, hour_vec
+
+def calcRunningPredcitionError(t_days,hist_weekday_proto,tn_proto,max_value,starting_hour=7):
+    limit_hour_vec = np.arange (starting_hour, 23, 0.5)
+    tn_running_error_vec=np.zeros((len(limit_hour_vec),len(t_days)))
+    proto_running_error_vec=np.zeros((len(limit_hour_vec),len(t_days)))
+
+    for i in range(0,len(t_days)):
+        cont=0
+        for limit_hour in limit_hour_vec:
+            tn_scaling = get_scaling_factor_and_constant(limit_hour, t_days[i], tn_proto)
+            stat_scaling = get_scaling_factor_and_constant(limit_hour, t_days[i], hist_weekday_proto.values)
+            scaled_tn_proto = tn_proto * tn_scaling.x[1]+tn_scaling.x[0]
+            scaled_stat_proto = hist_weekday_proto.values * stat_scaling.x[1]+stat_scaling.x[0]
+            [tn_running_error_vec[cont,i],proto_running_error_vec[cont,i]]=errors_calc(scaled_tn_proto, scaled_stat_proto, t_days[i], limit_hour, max_value)
+            cont=cont+1
+    return [tn_running_error_vec,proto_running_error_vec]
+
+def model_fit(params,data_curve,model_curve):
+    const = params[0]
+    scale_factor = params[1]
+
+    errorV=data_curve-model_curve*scale_factor-const
+    error = np.sum(np.power(errorV, 2))
+    return error
+
+def get_scaling_factor_and_constant(limit_hour, test_day, proto):
+    #if limit_hour < 6:
+    #    return 1
+    index = int(limit_hour*2)
+    current_real_data = test_day.values[:index]
+    proto_data = proto[:index]
+    parameters_fit=[0,1]
+    optimal_params_weekendtn = minimize(model_fit,
+                                    parameters_fit,
+                                    args=(current_real_data, proto_data),
+                                    method='Nelder-Mead',
+                                    tol=1e-6, options={'disp': False, 'maxfev': 100000})
+    return optimal_params_weekendtn
+
+def errors_calc(tn_proto, Prototype, real_day, limit_hour, m_value):
+    #Computing Errors
+    limit_hour = int(limit_hour*2)
+    tn_scaled_error = (np.absolute((np.array(tn_proto) - np.array(real_day.values)))/m_value)*100
+    mean_scaled_error = (np.absolute((np.array(Prototype) - np.array(real_day.values)))/m_value)*100
+
+    tn_s_error_mean = np.mean(tn_scaled_error[limit_hour:])
+    mean_s_error_mean = np.mean(mean_scaled_error[limit_hour:])
+    return [tn_s_error_mean,mean_s_error_mean]
+
+def plotRunningPredcitionError(tn_running_error_vec,proto_running_error_vec,starting_hour,day,current_parking) :
+    fsize=20
+    limit_hour_vec = np.arange (starting_hour, 23, 0.5)
+    plt.figure(figsize=(18,10));
+    plt.plot(limit_hour_vec,np.mean(tn_running_error_vec,axis=1),label='TN')
+    plt.plot(limit_hour_vec,np.mean(proto_running_error_vec,axis=1),label='Prototype')
+    plt.title("Avearge proportional Prediction Error " + day +  ' ('+ current_parking+')', fontsize=fsize)
+    plt.ylabel("Proportional Prediction Error %",fontsize=fsize);
+    plt.xlabel("Hour of the day",fontsize=fsize);
+    plt.yticks(fontsize=fsize)
+    plt.xticks(fontsize=fsize);
+    plt.grid(linestyle='dotted', linewidth='0.5', color='grey')
+    plt.legend(fontsize=fsize, loc="best",ncol=2);
