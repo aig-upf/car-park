@@ -608,6 +608,17 @@ def model_fit(params,data_curve,model_curve):
     error = np.sum(np.power(errorV, 2))
     return error
 
+def model_fitTH(params,data_curve,model_curve,max_value):
+    const = params[0]
+    scale_factor = params[1]
+    filterM=data_curve<max_value
+    #print(sum(filterM))
+
+    errorV=data_curve[filterM]-model_curve[filterM]*scale_factor-const
+    error = np.sum(np.power(errorV, 2))
+    return error
+
+
 def get_scaling_factor_and_constant(limit_hour, test_day, proto):
     #if limit_hour < 6:
     #    return 1
@@ -615,12 +626,26 @@ def get_scaling_factor_and_constant(limit_hour, test_day, proto):
     current_real_data = test_day.values[:index]
     proto_data = proto[:index]
     parameters_fit=[0,1]
-    optimal_params_weekendtn = minimize(model_fit,
+    optimal_params_fit = minimize(model_fit,
                                     parameters_fit,
                                     args=(current_real_data, proto_data),
                                     method='Nelder-Mead',
                                     tol=1e-6, options={'disp': False, 'maxfev': 100000})
-    return optimal_params_weekendtn
+    return optimal_params_fit
+
+def get_scaling_factor_and_constantTH(limit_hour, test_day, proto,max_value):
+    #if limit_hour < 6:
+    #    return 1
+    index = int(limit_hour*2)
+    current_real_data = test_day.values[:index]
+    proto_data = proto[:index]
+    parameters_fit=[0,1]
+    optimal_params_fit = minimize(model_fitTH,
+                                    parameters_fit,
+                                    args=(current_real_data, proto_data, max_value),
+                                    method='Nelder-Mead',
+                                    tol=1e-6, options={'disp': False, 'maxfev': 100000})
+    return optimal_params_fit
 
 def errors_calc(tn_proto, Prototype, real_day, limit_hour, m_value):
     #Computing Errors
@@ -645,3 +670,26 @@ def plotRunningPredcitionError(tn_running_error_vec,proto_running_error_vec,star
     plt.xticks(fontsize=fsize);
     plt.grid(linestyle='dotted', linewidth='0.5', color='grey')
     plt.legend(fontsize=fsize, loc="best",ncol=2);
+
+def plotRunningPredcitionErrorSTDV(tn_running_error_vec,proto_running_error_vec,starting_hour,day,current_parking) :
+    fsize=20
+    limit_hour_vec = np.arange (starting_hour, 23, 0.5)
+    fig=plt.figure(figsize=(18,10));
+    plt.plot(limit_hour_vec,np.mean(tn_running_error_vec,axis=1),color='b',label='TN')
+    plt.plot(limit_hour_vec,np.mean(tn_running_error_vec,axis=1)+np.std(tn_running_error_vec,axis=1),
+             linestyle='dashed',color='b',label='TN±stdv')
+    plt.plot(limit_hour_vec,np.mean(tn_running_error_vec,axis=1)-np.std(tn_running_error_vec,axis=1),
+             linestyle='dashed',color='b')
+    plt.plot(limit_hour_vec,np.mean(proto_running_error_vec,axis=1),color='r',label='Prototype')
+    #plt.plot(limit_hour_vec,np.mean(proto_running_error_vec,axis=1)+np.std(proto_running_error_vec,axis=1),
+    #         linestyle='dashed',color='r',label='Prototype±stdv')
+    #plt.plot(limit_hour_vec,np.mean(proto_running_error_vec,axis=1)-np.std(proto_running_error_vec,axis=1),
+    #         linestyle='dashed',color='r')
+    plt.title("Avearge proportional Prediction Error " + day +  ' ('+ current_parking+')', fontsize=fsize)
+    plt.ylabel("Proportional Prediction Error %",fontsize=fsize);
+    plt.xlabel("Hour of the day",fontsize=fsize);
+    plt.yticks(fontsize=fsize)
+    plt.xticks(fontsize=fsize);
+    plt.grid(linestyle='dotted', linewidth='0.5', color='grey')
+    plt.legend(fontsize=fsize, loc="best",ncol=2);
+    return fig
