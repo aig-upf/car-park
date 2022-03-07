@@ -693,3 +693,53 @@ def plotRunningPredcitionErrorSTDV(tn_running_error_vec,proto_running_error_vec,
     plt.grid(linestyle='dotted', linewidth='0.5', color='grey')
     plt.legend(fontsize=fsize, loc="best",ncol=2);
     return fig
+
+def plotRunningPredcitionErrorAgg(tn_running_error_wd,proto_running_error_wd,tn_running_error_fr,
+                                  proto_running_error_fr,tn_running_error_we,proto_running_error_we,
+                                  starting_hour,current_parking,bol_plotstdv=False) :
+    fsize=20
+    #default colors:
+    bd='#1f77b4'
+    rd='#ff7f0e'
+    gd='#2ca02c'
+    limit_hour_vec = np.arange (starting_hour, 23, 0.5)
+    fig=plt.figure(figsize=(18,10));
+    plt.plot(limit_hour_vec,np.mean(tn_running_error_wd,axis=1),color=bd,label='Weekday: TN')
+    plt.plot(limit_hour_vec,np.mean(proto_running_error_wd,axis=1),linestyle='dashdot',color=bd,
+             label='Weekday: Prototype')
+    #plt.plot(limit_hour_vec,np.mean(proto_running_error_wd,axis=1)+np.std(proto_running_error_wd,axis=1),
+    #         linestyle='dashed',color='r',label='Prototype±stdv')
+    #plt.plot(limit_hour_vec,np.mean(proto_running_error_wd,axis=1)-np.std(proto_running_error_wd,axis=1),
+    #         linestyle='dashed',color='r')
+    plt.plot(limit_hour_vec,np.mean(tn_running_error_fr,axis=1),color=rd,label='Friday: TN')
+
+    plt.plot(limit_hour_vec,np.mean(proto_running_error_fr,axis=1),linestyle='dashdot',color=rd,
+             label='Friday: Prototype')
+
+    plt.plot(limit_hour_vec,np.mean(tn_running_error_we,axis=1),color=gd,label='Weekend: TN')
+
+    if bol_plotstdv:
+        plt.plot(limit_hour_vec,np.mean(tn_running_error_wd,axis=1)+np.std(tn_running_error_wd,axis=1),
+             linestyle='dashed',color=bd,label='Weekday: TN±stdv')
+        plt.plot(limit_hour_vec,np.mean(tn_running_error_wd,axis=1)-np.std(tn_running_error_wd,axis=1),
+             linestyle='dashed',color=bd)
+        plt.plot(limit_hour_vec,np.mean(tn_running_error_fr,axis=1)+np.std(tn_running_error_fr,axis=1),
+             linestyle='dashed',color=rd,label='Friday: TN±stdv')
+        plt.plot(limit_hour_vec,np.mean(tn_running_error_fr,axis=1)-np.std(tn_running_error_fr,axis=1),
+             linestyle='dashed',color=rd)
+        plt.plot(limit_hour_vec,np.mean(tn_running_error_we,axis=1)+np.std(tn_running_error_we,axis=1),
+             linestyle='dashed',color=gd,label='Weekend: TN±stdv')
+        plt.plot(limit_hour_vec,np.mean(tn_running_error_we,axis=1)-np.std(tn_running_error_we,axis=1),
+             linestyle='dashed',color=gd)
+
+    plt.plot(limit_hour_vec,np.mean(proto_running_error_we,axis=1),linestyle='dashdot',color=gd,
+             label='Weekend: Prototype')
+    plt.title("Avearge proportional Prediction Error ("+ current_parking+')', fontsize=fsize)
+    plt.ylabel("Proportional Prediction Error %",fontsize=fsize);
+    plt.xlabel("Hour of the day",fontsize=fsize);
+    plt.yticks(fontsize=fsize)
+    plt.xticks(fontsize=fsize);
+    plt.xlim([starting_hour,22.5])
+    plt.grid(linestyle='dotted', linewidth='0.5', color='grey')
+    plt.legend(fontsize=fsize, loc="best",ncol=3);
+    return fig
