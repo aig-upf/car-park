@@ -531,6 +531,7 @@ def get_scaling_factor(limit_hour, test_day, proto):
     return scaling
 
 
+
 def generate_mean_variance(accumulated_date, accumulated_free_slots):
     aux_dict = {};
     for ii in np.arange(len(accumulated_date)):
@@ -569,7 +570,7 @@ def calcRunningPredcitionError(t_days,statistic_proto,tn_proto,max_value,startin
             cont=cont+1
     return [tn_running_error_vec,proto_running_error_vec]
 
-def calcRunningPredcitionErrorTH(t_days,statistic_proto,tn_proto,tn_arr_proto,tn_dep_proto,
+def calcRunningPredcitionErrorTHv2(t_days,statistic_proto,tn_arr_proto,tn_dep_proto,
                                  max_value,starting_hour=7):
     limit_hour_vec = np.arange (starting_hour, 23, 0.5)
     tn_running_error_vec=np.zeros((len(limit_hour_vec),len(t_days)))
@@ -578,11 +579,9 @@ def calcRunningPredcitionErrorTH(t_days,statistic_proto,tn_proto,tn_arr_proto,tn
     for i in range(0,len(t_days)):
         cont=0
         for limit_hour in limit_hour_vec:
-            tn_scaling = get_scaling_factor_and_constant(limit_hour, t_days[i], tn_proto)
-            tn_arr_scaling = get_scaling_factor_and_constant(limit_hour, t_days[i], tn_arr_proto)
+            tn_arr_scaling = get_scaling_factor_and_constantTH(limit_hour, t_days[i], tn_arr_proto)
             stat_scaling = get_scaling_factor_and_constant(limit_hour, t_days[i], statistic_proto.values)
 
-            scaled_tn_proto = tn_proto * tn_scaling.x[1]+tn_scaling.x[0]
             scaled_tn_arr_proto = tn_arr_proto * tn_arr_scaling.x[1]+tn_arr_scaling.x[0]
             scaled_tn_dep_proto = tn_dep_proto * tn_arr_scaling.x[1]
 
@@ -600,6 +599,47 @@ def calcRunningPredcitionErrorTH(t_days,statistic_proto,tn_proto,tn_arr_proto,tn
     return [tn_running_error_vec,proto_running_error_vec]
 
 
+def calcRunningPredcitionErrorTHdep(t_days,statistic_proto,tn_arr_proto,tn_dep_proto,
+                                 max_value,starting_hour=7):
+    limit_hour_vec = np.arange (starting_hour, 23, 0.5)
+    tn_running_error_vec=np.zeros((len(limit_hour_vec),len(t_days)))
+    proto_running_error_vec=np.zeros((len(limit_hour_vec),len(t_days)))
+
+    #find when we should rescale deprting curve
+    #we do if more than a proportion of dep_th cars have left (to have enoungh data to fit)
+    dep_th=0.05
+    bol_index_dep=tn_dep_proto/max(tn_dep_proto)>dep_th
+    index_dep=bol_index_dep.argmax()
+
+    for i in range(0,len(t_days)):
+        cont=0
+        for limit_hour in limit_hour_vec:
+            tn_arr_scaling = get_scaling_factor_and_constantTH(limit_hour, t_days[i], tn_arr_proto)
+            stat_scaling = get_scaling_factor_and_constant(limit_hour, t_days[i], statistic_proto.values)
+
+            scaled_tn_arr_proto = tn_arr_proto * tn_arr_scaling.x[1]+tn_arr_scaling.x[0]
+
+            bol_rescale_dep= (limit_hour*2 > index_dep)
+            if bol_rescale_dep:
+                tn_dep_scaling = get_scaling_factor_dep(limit_hour, t_days[i], tn_dep_proto,max_value)
+                scaled_tn_dep_proto = tn_dep_proto * tn_dep_scaling.x[0]
+            else:
+                scaled_tn_dep_proto = tn_dep_proto * tn_arr_scaling.x[1]
+
+            if max(scaled_tn_arr_proto)>max_value:
+                #cars_could_not_park=max(scaled_tn_arr_proto[scaled_tn_arr_proto >max_value])-max_value
+                #print(round(cars_could_not_park), "cars could not park")
+                scaled_tn_arr_proto[scaled_tn_arr_proto >max_value]=max_value
+                if not(bol_rescale_dep):
+                    scaled_tn_dep_proto=scaled_tn_dep_proto/max(scaled_tn_dep_proto)*(max_value-tn_arr_scaling.x[0])
+
+            scaled_tn_proto2=scaled_tn_arr_proto-scaled_tn_dep_proto
+            scaled_stat_proto = statistic_proto.values * stat_scaling.x[1]+stat_scaling.x[0]
+            [tn_running_error_vec[cont,i],proto_running_error_vec[cont,i]]= \
+                errors_calc(scaled_tn_proto2, scaled_stat_proto, t_days[i], limit_hour, max_value)
+            cont=cont+1
+    return [tn_running_error_vec,proto_running_error_vec]
+
 def model_fit(params,data_curve,model_curve):
     const = params[0]
     scale_factor = params[1]
@@ -608,15 +648,28 @@ def model_fit(params,data_curve,model_curve):
     error = np.sum(np.power(errorV, 2))
     return error
 
-def model_fitTH(params,data_curve,model_curve,max_value):
+
+def model_fitTH(params,data_curve,model_curve):
     const = params[0]
     scale_factor = params[1]
-    filterM=data_curve<max_value
-    #print(sum(filterM))
 
-    errorV=data_curve[filterM]-model_curve[filterM]*scale_factor-const
+    max_index =data_curve.argmax()
+
+    errorV=data_curve[:max_index]-model_curve[:max_index]*scale_factor-const
     error = np.sum(np.power(errorV, 2))
     return error
+
+
+def model_fit_dep(params,data_curve,model_curve, max_value):
+    scale_factor = params
+    epsilon=1 #might be useful to find a heuristic for that
+    bol_start_index =model_curve>epsilon
+    start_index=bol_start_index.argmax()
+
+    errorV=max_value-data_curve[start_index:]-model_curve[start_index:]*scale_factor
+    error = np.sum(np.power(errorV, 2))
+    return error
+
 
 
 def get_scaling_factor_and_constant(limit_hour, test_day, proto):
@@ -633,7 +686,8 @@ def get_scaling_factor_and_constant(limit_hour, test_day, proto):
                                     tol=1e-6, options={'disp': False, 'maxfev': 100000})
     return optimal_params_fit
 
-def get_scaling_factor_and_constantTH(limit_hour, test_day, proto,max_value):
+
+def get_scaling_factor_and_constantTH(limit_hour, test_day, proto):
     #if limit_hour < 6:
     #    return 1
     index = int(limit_hour*2)
@@ -641,6 +695,21 @@ def get_scaling_factor_and_constantTH(limit_hour, test_day, proto,max_value):
     proto_data = proto[:index]
     parameters_fit=[0,1]
     optimal_params_fit = minimize(model_fitTH,
+                                    parameters_fit,
+                                    args=(current_real_data, proto_data),
+                                    method='Nelder-Mead',
+                                    tol=1e-6, options={'disp': False, 'maxfev': 100000})
+    return optimal_params_fit
+
+
+def get_scaling_factor_dep(limit_hour, test_day, proto, max_value):
+    #if limit_hour < 6:
+    #    return 1
+    index = int(limit_hour*2)
+    current_real_data = test_day.values[:index]
+    proto_data = proto[:index]
+    parameters_fit=1
+    optimal_params_fit = minimize(model_fit_dep,
                                     parameters_fit,
                                     args=(current_real_data, proto_data, max_value),
                                     method='Nelder-Mead',
