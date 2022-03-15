@@ -493,12 +493,20 @@ def real_timing_predition(fig, ax, axx, day, tn_proto, real_day, scaled_proto, P
 def errors_plottingM(fig, ax, axx, scaled_proto, Prototype, real_day, day, limit_hour, m_value):
     #Computing Errors
     time = np.linspace(0,23.5,48)
-    limit_hour = limit_hour*2
-    tn_scaled_error = (np.absolute((np.array(scaled_proto) - np.array(real_day.values)))/m_value)*100
-    mean_scaled_error = (np.absolute((np.array(Prototype) - np.array(real_day.values)))/m_value)*100
+    limit_hour = int(limit_hour*2)
+    #tn_scaled_error = (np.absolute((np.array(scaled_proto) - np.array(real_day.values)))/m_value)*100
+    #mean_scaled_error = (np.absolute((np.array(Prototype) - np.array(real_day.values)))/m_value)*100
+    normalizador=np.array(real_day.values)
+    normalizador[normalizador==0]=1;
+    tn_scaled_error = (np.absolute((np.array(scaled_proto) - np.array(real_day.values)))/normalizador)*100
+    mean_scaled_error = (np.absolute((np.array(Prototype) - np.array(real_day.values)))/normalizador)*100
+
+
 
     tn_s_error_mean = [np.mean(tn_scaled_error[limit_hour:])]*len(tn_scaled_error)
     mean_s_error_mean = [np.mean(mean_scaled_error[limit_hour:])]*len(mean_scaled_error)
+
+
 
     #Second plot
 #     time = time[limit_hour:]
@@ -716,11 +724,24 @@ def get_scaling_factor_dep(limit_hour, test_day, proto, max_value):
                                     tol=1e-6, options={'disp': False, 'maxfev': 100000})
     return optimal_params_fit
 
-def errors_calc(tn_proto, Prototype, real_day, limit_hour, m_value):
+def errors_calc_max(tn_proto, Prototype, real_day, limit_hour, m_value):
     #Computing Errors
     limit_hour = int(limit_hour*2)
     tn_scaled_error = (np.absolute((np.array(tn_proto) - np.array(real_day.values)))/m_value)*100
     mean_scaled_error = (np.absolute((np.array(Prototype) - np.array(real_day.values)))/m_value)*100
+
+    tn_s_error_mean = np.mean(tn_scaled_error[limit_hour:])
+    mean_s_error_mean = np.mean(mean_scaled_error[limit_hour:])
+    return [tn_s_error_mean,mean_s_error_mean]
+
+def errors_calc(tn_proto, Prototype, real_day, limit_hour, m_value):
+    #Computing Errors
+    limit_hour = int(limit_hour*2)
+
+    normalizador=np.array(real_day.values)
+    normalizador[normalizador==0]=1;
+    tn_scaled_error = (np.absolute((np.array(tn_proto) - np.array(real_day.values)))/normalizador)*100
+    mean_scaled_error = (np.absolute((np.array(Prototype) - np.array(real_day.values)))/normalizador)*100
 
     tn_s_error_mean = np.mean(tn_scaled_error[limit_hour:])
     mean_s_error_mean = np.mean(mean_scaled_error[limit_hour:])
