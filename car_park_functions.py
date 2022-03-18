@@ -442,6 +442,27 @@ def compute_testing_prop_errorMstdv(testing_days, proto_data, m_value):
     stdvE=np.sqrt(errors2/n_test_days-meanE*meanE)
     return [meanE, stdvE]
 
+def compute_testing_prop_errorMstdv_fit(testing_days, proto_data, m_value):
+    errors = np.zeros(48)
+    errors2=np.zeros(48)
+    n_test_days = len(testing_days)
+    proto = np.array(proto_data)
+
+    #fig, ax = plt.subplots(n_test_days,1)
+    for i in range(0, n_test_days):
+        day = testing_days[i]
+        f_scaling = get_scaling_factor_and_constant(24, day, proto)
+        scaled_proto = proto * f_scaling.x[1]+f_scaling.x[0]
+        #time = np.linspace(0,23.5,48)
+        #ax[i].plot(time,scaled_proto)
+        #ax[i].plot(time,day)
+        er = np.array((np.absolute(scaled_proto - day)/m_value)*100)
+        errors += er
+        errors2 += er*er
+    meanE=errors/n_test_days
+    stdvE=np.sqrt(errors2/n_test_days-meanE*meanE)
+    return [meanE, stdvE]
+
 def subplotCDFsubtractionErr(fig, ax, axx, axy, x, error, mean, title, day ):
     ax[axx,axy].plot(x, error, color="tomato", linewidth=2, zorder=10, label='Proportional error')
     ax[axx,axy].plot(x, mean, linewidth=1, linestyle='--' ,color='black', label='Mean error')
@@ -494,20 +515,20 @@ def errors_plottingM(fig, ax, axx, scaled_proto, Prototype, real_day, day, limit
     #Computing Errors
     time = np.linspace(0,23.5,48)
     limit_hour = int(limit_hour*2)
-    #tn_scaled_error = (np.absolute((np.array(scaled_proto) - np.array(real_day.values)))/m_value)*100
-    #mean_scaled_error = (np.absolute((np.array(Prototype) - np.array(real_day.values)))/m_value)*100
-    normalizador=np.array(real_day.values)
-    normalizador[normalizador==0]=1;
-    tn_scaled_error = (np.absolute((np.array(scaled_proto) - np.array(real_day.values)))/normalizador)*100
-    mean_scaled_error = (np.absolute((np.array(Prototype) - np.array(real_day.values)))/normalizador)*100
+    tn_scaled_error = (np.absolute((np.array(scaled_proto) - np.array(real_day.values)))/m_value)*100
+    mean_scaled_error = (np.absolute((np.array(Prototype) - np.array(real_day.values)))/m_value)*100
+    #normalizador=np.array(real_day.values)
+    #normalizador[normalizador==0]=1;
+    #tn_scaled_error = (np.absolute((np.array(scaled_proto) - np.array(real_day.values)))/normalizador)*100
+    #mean_scaled_error = (np.absolute((np.array(Prototype) - np.array(real_day.values)))/normalizador)*100
 
 
 
     tn_s_error_mean = [np.mean(tn_scaled_error[limit_hour:])]*len(tn_scaled_error)
     mean_s_error_mean = [np.mean(mean_scaled_error[limit_hour:])]*len(mean_scaled_error)
 
-
-
+    tn_s_error_median = np.median(tn_scaled_error[limit_hour:])
+    mean_s_error_median = np.median(mean_scaled_error[limit_hour:])
     #Second plot
 #     time = time[limit_hour:]
     ax[axx].plot(time[limit_hour:], tn_scaled_error[limit_hour:], color='tomato', label='TN scaling error')
@@ -522,10 +543,12 @@ def errors_plottingM(fig, ax, axx, scaled_proto, Prototype, real_day, day, limit
     ax[axx].set_xlabel('Hour', fontsize=14)
     ax[axx].set_ylabel('Proportional error (%)', fontsize=14)
 
-    print('Real ' + day + ' scaled prtotype error: ', round(100*mean_s_error_mean[0])/100, '%')
-    print('Real ' + day + ' scaled prtotype STDV: ', np.std(mean_scaled_error[limit_hour:]))
+    print('Real ' + day + ' scaled prototype error: ', round(100*mean_s_error_mean[0])/100, '%')
+    print('Real ' + day + ' scaled prototype error (median): ', round(100*mean_s_error_median)/100, '%')
+    print('Real ' + day + ' scaled prototype STDV:', np.std(mean_scaled_error[limit_hour:]))
 
     print('Real ' + day + ' scaled TN error: ', round(100*tn_s_error_mean[0])/100, '%')
+    print('Real ' + day + ' scaled TN error (median): ', round(100*tn_s_error_median)/100, '%')
     print('Real ' + day + ' scaled TN STDV: ', np.std(tn_scaled_error[limit_hour:]))
     print('_____________________________________________________________')
 
@@ -574,7 +597,7 @@ def calcRunningPredcitionError(t_days,statistic_proto,tn_proto,max_value,startin
             stat_scaling = get_scaling_factor_and_constant(limit_hour, t_days[i], statistic_proto.values)
             scaled_tn_proto = tn_proto * tn_scaling.x[1]+tn_scaling.x[0]
             scaled_stat_proto = statistic_proto.values * stat_scaling.x[1]+stat_scaling.x[0]
-            [tn_running_error_vec[cont,i],proto_running_error_vec[cont,i]]=errors_calc(scaled_tn_proto, scaled_stat_proto, t_days[i], limit_hour, max_value)
+            [tn_running_error_vec[cont,i],proto_running_error_vec[cont,i]]=errors_calc_max(scaled_tn_proto, scaled_stat_proto, t_days[i], limit_hour, max_value)
             cont=cont+1
     return [tn_running_error_vec,proto_running_error_vec]
 
@@ -602,7 +625,7 @@ def calcRunningPredcitionErrorTHv2(t_days,statistic_proto,tn_arr_proto,tn_dep_pr
             scaled_tn_proto2=scaled_tn_arr_proto-scaled_tn_dep_proto
             scaled_stat_proto = statistic_proto.values * stat_scaling.x[1]+stat_scaling.x[0]
             [tn_running_error_vec[cont,i],proto_running_error_vec[cont,i]]= \
-                errors_calc(scaled_tn_proto2, scaled_stat_proto, t_days[i], limit_hour, max_value)
+                errors_calc_max(scaled_tn_proto2, scaled_stat_proto, t_days[i], limit_hour, max_value)
             cont=cont+1
     return [tn_running_error_vec,proto_running_error_vec]
 
@@ -644,7 +667,7 @@ def calcRunningPredcitionErrorTHdep(t_days,statistic_proto,tn_arr_proto,tn_dep_p
             scaled_tn_proto2=scaled_tn_arr_proto-scaled_tn_dep_proto
             scaled_stat_proto = statistic_proto.values * stat_scaling.x[1]+stat_scaling.x[0]
             [tn_running_error_vec[cont,i],proto_running_error_vec[cont,i]]= \
-                errors_calc(scaled_tn_proto2, scaled_stat_proto, t_days[i], limit_hour, max_value)
+                errors_calc_max(scaled_tn_proto2, scaled_stat_proto, t_days[i], limit_hour, max_value)
             cont=cont+1
     return [tn_running_error_vec,proto_running_error_vec]
 
