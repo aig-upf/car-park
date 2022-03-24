@@ -495,6 +495,41 @@ def compute_testing_prop_errorMstdv_fitTh(testing_days, tn_arr_proto, tn_dep_pro
     stdvE=np.sqrt(errors2/n_test_days-meanE*meanE)
     return [meanE, stdvE]
 
+def compute_testing_prop_errorMstdv_fitThdep(testing_days, tn_arr_proto, tn_dep_proto, m_value):
+    errors = np.zeros(48)
+    errors2=np.zeros(48)
+    n_test_days = len(testing_days)
+    #proto = np.array(proto_data)
+
+    #fig, ax = plt.subplots(n_test_days,1)
+    for i in range(0, n_test_days):
+        day = testing_days[i]
+
+        tn_arr_scaling = get_scaling_factor_and_constantTH(24, day, tn_arr_proto)
+        scaled_tn_arr_proto = tn_arr_proto * tn_arr_scaling.x[1]+tn_arr_scaling.x[0]
+        #scaled_tn_dep_proto = tn_dep_proto * tn_arr_scaling.x[1]
+
+        tn_dep_scaling = get_scaling_factor_dep(24, day, tn_dep_proto,m_value)
+        scaled_tn_dep_proto = tn_dep_proto * tn_dep_scaling.x[0]
+
+
+        if max(scaled_tn_arr_proto)>m_value:
+            cars_could_not_park=max(scaled_tn_arr_proto[scaled_tn_arr_proto >m_value])-m_value
+            print(round(cars_could_not_park), "cars could not park")
+            scaled_tn_arr_proto[scaled_tn_arr_proto >m_value]=m_value
+            #scaled_tn_dep_proto=scaled_tn_dep_proto/max(scaled_tn_dep_proto)*(m_value-tn_arr_scaling.x[0])
+        scaled_proto=scaled_tn_arr_proto-scaled_tn_dep_proto
+
+        #time = np.linspace(0,23.5,48)
+        #ax[i].plot(time,scaled_proto)
+        #ax[i].plot(time,day)
+        er = np.array((np.absolute(scaled_proto - day)/m_value)*100)
+        errors += er
+        errors2 += er*er
+    meanE=errors/n_test_days
+    stdvE=np.sqrt(errors2/n_test_days-meanE*meanE)
+    return [meanE, stdvE]
+
 def subplotCDFsubtractionErr(fig, ax, axx, axy, x, error, mean, title, day ):
     ax[axx,axy].plot(x, error, color="tomato", linewidth=2, zorder=10, label='Proportional error')
     ax[axx,axy].plot(x, mean, linewidth=1, linestyle='--' ,color='black', label='Mean error')
