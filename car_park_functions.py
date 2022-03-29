@@ -960,7 +960,7 @@ def plotRunningPredcitionErrorSTDV(tn_running_error_vec,proto_running_error_vec,
 
 def plotRunningPredcitionErrorAgg(tn_running_error_wd,proto_running_error_wd,tn_running_error_fr,
                                   proto_running_error_fr,tn_running_error_we,proto_running_error_we,
-                                  starting_hour,current_parking,bol_plotstdv=False) :
+                                  starting_hour,current_parking,bol_plotstdv=False):
     fsize=20
     #default colors:
     bd='#1f77b4'
@@ -1007,3 +1007,26 @@ def plotRunningPredcitionErrorAgg(tn_running_error_wd,proto_running_error_wd,tn_
     plt.grid(linestyle='dotted', linewidth='0.5', color='grey')
     plt.legend(fontsize=fsize, loc="best",ncol=3);
     return fig
+
+
+def adjacent_values(vals, q1, q3):
+    upper_adjacent_value = q3 + (q3 - q1) * 1.5
+    upper_adjacent_value = np.clip(upper_adjacent_value, q3, vals[-1])
+
+    lower_adjacent_value = q1 - (q3 - q1) * 1.5
+    lower_adjacent_value = np.clip(lower_adjacent_value, vals[0], q1)
+    return lower_adjacent_value, upper_adjacent_value
+
+
+def set_axis_style(ax, labels):
+    fsize=20
+    ax.xaxis.set_tick_params(direction='out')
+    ax.xaxis.set_ticks_position('bottom')
+    ax.set_xticks(np.arange(1, len(labels) + 1))
+    ax.set_xticklabels(labels, fontsize=fsize)
+    ax.tick_params(axis='y', labelsize=fsize)
+    ax.set_ylim(bottom=0)
+    ax.set_xlim(0.25, len(labels) + 0.75)
+    ax.grid(linestyle='dotted', linewidth='0.5', color='grey')
+    ax.set_xlabel('Type of day and model', fontsize=fsize)
+    ax.set_ylabel('Proportional Error (%)', fontsize=fsize)
