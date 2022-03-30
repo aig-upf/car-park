@@ -668,8 +668,8 @@ def calcRunningPredcitionError(t_days,statistic_proto,tn_proto,max_value,startin
             cont=cont+1
     return [tn_running_error_vec,proto_running_error_vec]
 
-def calcRunningPredcitionErrorNow(t_days,statistic_proto,tn_proto,max_value,starting_hour=7,window_lenth=2):
-    limit_hour_vec = np.arange (starting_hour, 23, 0.5)
+def calcRunningPredcitionErrorNow(t_days,statistic_proto,tn_proto,max_value,starting_hour=7,window_lenth=2,ending_hour=23):
+    limit_hour_vec = np.arange (starting_hour, ending_hour, 0.5)
     tn_running_error_vec=np.zeros((len(limit_hour_vec),len(t_days)))
     proto_running_error_vec=np.zeros((len(limit_hour_vec),len(t_days)))
 
@@ -685,8 +685,8 @@ def calcRunningPredcitionErrorNow(t_days,statistic_proto,tn_proto,max_value,star
     return [tn_running_error_vec,proto_running_error_vec]
 
 def calcRunningPredcitionErrorNowTHv2(t_days,statistic_proto,tn_arr_proto,tn_dep_proto,
-                                      max_value,starting_hour=7,window_lenth=2):
-    limit_hour_vec = np.arange (starting_hour, 23, 0.5)
+                                      max_value,starting_hour=7,window_lenth=2,ending_hour=23):
+    limit_hour_vec = np.arange (starting_hour, ending_hour, 0.5)
     tn_running_error_vec=np.zeros((len(limit_hour_vec),len(t_days)))
     proto_running_error_vec=np.zeros((len(limit_hour_vec),len(t_days)))
 
