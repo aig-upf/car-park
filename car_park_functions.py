@@ -10,6 +10,7 @@ from matplotlib import pyplot as plt
 from scipy.stats import truncnorm
 from scipy.optimize import minimize
 from sklearn.metrics import mean_squared_error
+from sklearn.linear_model import LinearRegression
 import numpy as np
 
 import calendar
@@ -37,6 +38,19 @@ def get_days_of_protos_areanormalized(proto_name, df_):
             days.append(day)
 
     return days
+
+
+def get_days_of_protos(proto_name, df_):
+    data_temp = df_[df_['Profile_3'] == proto_name]
+    days = []
+    for i in range(0,data_temp.shape[0], 48):
+#        day = data_temp['Occupancy_mod'][i:i+48]
+        day = data_temp['Occupancy'][i:i+48]
+        if len(day) == 48:
+            days.append(day)
+
+    return days
+
 
 
 def get_dates_of_protos(proto_name, df_):
@@ -1030,3 +1044,38 @@ def set_axis_style(ax, labels):
     ax.grid(linestyle='dotted', linewidth='0.5', color='grey')
     ax.set_xlabel('Type of day and model', fontsize=fsize)
     ax.set_ylabel('Proportional Error (%)', fontsize=fsize)
+
+def calcRunningPredcitionErrorNowReg(t_days,training_days,max_value,starting_hour=7,window_lenth=2,ending_hour=23):
+    #starting_hour=7
+    #window_lenth=2
+    #ending_hour=23
+    training_matrix=np.zeros((len(training_days), 48))
+    i=0
+    for day_list in training_days:
+        temp=day_list.tolist()
+        training_matrix[i,:]=temp
+        i=i+1
+    training_diff_matrix=np.diff(training_matrix,axis=1,prepend=0)
+
+    testing_matrix=np.zeros((len(t_days), 48))
+    i=0
+    for day_list in t_days:
+        temp=day_list.tolist()
+        testing_matrix[i,:]=temp
+        i=i+1
+    testing_diff_matrix=np.diff(testing_matrix,axis=1,prepend=0)
+
+    limit_indx_vec = np.arange (starting_hour*2, ending_hour*2, 1)
+    reg_running_error_vec=np.zeros((len(limit_indx_vec),len(t_days)))
+    cont=0
+    for limit_indx in limit_indx_vec:
+        X_trainT=training_diff_matrix[:,0:limit_indx]
+        y_trainT=training_matrix[:,(limit_indx+window_lenth)]
+        model = LinearRegression().fit(X_trainT, y_trainT)
+
+        X_testT=testing_diff_matrix[:,0:limit_indx]
+        y_testT=testing_matrix[:,(limit_indx+window_lenth)]
+        y_pred = model.predict(X_testT)
+        reg_running_error_vec[cont,:] = abs(y_pred-y_testT)/max_value
+        cont=cont+1
+    return reg_running_error_vec
