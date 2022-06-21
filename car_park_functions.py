@@ -383,9 +383,9 @@ def plot_model_tn_thDisc(loc_ar=.3, scale_ar=.05, loc_de=.8, scale_de=.1,thresh=
     fig, ax = plt.subplots(2,figsize=(7,4))
     ax[0].plot(time_th[masktn_arr], pdf_ar[masktn_arr]/sum(pdf_ar_orig) , '-b',label='PDF arrivals')
     ax[0].plot(time, pdf_de/sum(pdf_de), '-r',label='PDF departures')
-    ax[0].plot(t_parking_full*np.array([1, 1]),[ymin,ymax],'--',linewidth=3,label="Parking full")
+    ax[0].plot(t_parking_full*np.array([1, 1]),[ymin,ymax],'--',linewidth=2,label="Lot Full")
     ax[0].plot(time_th[masktn_arr_excees], pdf_ar_excees[masktn_arr_excees]/sum(pdf_ar_orig) , '-.k',
-               label='surplus cars (PDF)')
+               label='Surplus (PDF)')
     ax[0].set_title('PDFs', fontsize=fsize)
     ax[0].legend(fontsize=fsize, loc="upper right");
     ax[0].set_ylabel('probability', fontsize = fsize)
@@ -399,9 +399,9 @@ def plot_model_tn_thDisc(loc_ar=.3, scale_ar=.05, loc_de=.8, scale_de=.1,thresh=
     ax[1].plot(time_th, cdf_ar , '--b',label='CDF arrivals')
     ax[1].plot(time_th, cdf_de, '--r',label='CDF departures')
     ax[1].plot(time_th, cdf_ar-cdf_de, 'r',linewidth=3,label='TNL model')
-    ax[1].plot(t_parking_full*np.array([1, 1]),[ymin,ymax],'--',linewidth=3,label="Parking full")
-    ax[1].plot(time_th[masktn_arr_excees], cdf_ar_withExcess[masktn_arr_excees] , '-.k',
-               label='surplus cars (CDF)')
+    ax[1].plot(t_parking_full*np.array([1, 1]),[ymin,ymax],'--',linewidth=2,label="Lot Full")
+    ax[1].plot(time_th[masktn_arr_excees], cdf_ar_withExcess[masktn_arr_excees] , '-k',
+               label='Surplus (CDF)')
     ax[1].set_title('CDFs', fontsize=fsize)
     ax[1].legend(fontsize=fsize, loc="upper left")
     ax[1].grid(which='major',linestyle='dotted')
