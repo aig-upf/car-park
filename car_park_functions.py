@@ -393,7 +393,7 @@ def plot_model_tn_thDisc(loc_ar=.3, scale_ar=.05, loc_de=.8, scale_de=.1,thresh=
     ax[0].set_xlim([0,23.5])
     ax[0].set_ylim([ymin,ymax])
     ax[0].tick_params(axis='both', which='major', labelsize=fsize)
-    
+
     ymin=-0.06
     ymax=max(cdf_ar_withExcess)*1.05
     ax[1].plot(time_th, cdf_ar , '--b',label='CDF arrivals')
@@ -410,7 +410,7 @@ def plot_model_tn_thDisc(loc_ar=.3, scale_ar=.05, loc_de=.8, scale_de=.1,thresh=
     ax[1].set_xlabel('hour', fontsize = fsize)
     ax[1].set_ylabel('occupancy', fontsize = fsize)
     ax[1].tick_params(axis='both', which='major', labelsize=fsize)
-    
+
     return fig
 
 def printTimes(params,current_parking,timeString='WEEKDAYS'):
@@ -832,7 +832,7 @@ def model_fitTH(params,data_curve,model_curve):
 
     max_index =data_curve.argmax()
 
-    errorV=data_curve[:max_index]-model_curve[:max_index]*scale_factor-const
+    errorV=data_curve[:max_index+1]-model_curve[:max_index+1]*scale_factor-const
     error = np.sum(np.power(errorV, 2))
     return error
 
