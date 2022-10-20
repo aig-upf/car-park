@@ -1,0 +1,68 @@
+parks = {'Vilanova', 'SantSadurni', 'SantBoi', 'QuatreCamins',...
+                      'Cerdanyola','Granollers','Martorell','Mollet',...
+                      'SantQuirze','PratDelLlobregat'};
+
+idxOK = [1:6 8 10];
+parksOK = {parks{idxOK}};
+
+str = '../data/maxOccupancy.csv';
+data = readtable(str);
+parkLims = data.Var2(idxOK);
+    
+h = figure(1); clf;
+set(h,'PaperType','A4');
+set(h,'PaperOrientation','portrait');
+set(h,'PaperUnits','centimeters');
+set(h,'PaperPosition',[.6 0 20 20]); 
+set(h,'PaperSize',[20 20]);
+FontSize = 18;
+
+for p = 1:numel(parksOK)
+    
+    subplot(4,2,p)
+
+    binsize = 5;
+    
+    % weekday
+    str = ['../data/' parksOK{p} '_WD_maxV.csv'];
+    Ns = csvread(str,1);
+    data = Ns(:,2);
+    [a,b] = hist(data,min(data):binsize:max(data));
+    bh= bar(b,a);
+    set(bh,'FaceColor',[1,0.65,0])
+    
+    % friday
+    hold on;
+    str = ['../data/' parksOK{p} '_FR_maxV.csv'];
+    Ns = csvread(str,1);
+    data = Ns(:,2);
+    [a,b] = hist(data,min(data):binsize:max(data));
+    bh= bar(b,a);
+    set(bh,'FaceColor','b')
+
+    % weekend
+    hold on;
+    str = ['../data/' parksOK{p} '_WE_maxV.csv'];
+    Ns = csvread(str,1);
+    data = Ns(:,2);
+    [a,b] = hist(data,min(data):binsize:max(data));
+    bh= bar(b,a);
+    set(bh,'FaceColor',[1,0.65,0])
+
+    title(parksOK{p});
+    if p==1
+        hl = legend('WD','FR','WE');
+        set(hl,'location','best');
+    end
+    
+    set(gca,'xlim',[0 max(parkLims)]);
+    plot(parkLims(p)*ones(10,1), linspace(0,max(a),10),'linewidth',3,'color','r');
+    grid on;
+    if p==1
+        xt = get(gca,'xtick');
+    else 
+        set(gca,'xtick',xt);
+    end
+end
+
+saveas(h,'fig_Ns.pdf');
