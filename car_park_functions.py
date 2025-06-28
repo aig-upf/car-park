@@ -1085,3 +1085,18 @@ def calcRunningPredcitionErrorNowReg(t_days,training_days,max_value,starting_hou
         reg_running_error_vec[cont,:] = abs(y_pred-y_testT)/max_value
         cont=cont+1
     return reg_running_error_vec
+
+def get_R(SS_res,training_data):
+    num_training_days = len(training_data)
+    mean_day=np.zeros(48)
+    for ii in range(0,num_training_days):
+        day = np.array(training_data[ii])
+        mean_day=mean_day+day
+    average_day=mean_day/num_training_days
+
+    SS_tot=0
+    for ii in range(0,num_training_days):
+        day = np.array(training_data[ii])
+        SS_tot=SS_tot+sum((average_day-day)**2)
+    R=1-SS_res/SS_tot
+    return R
