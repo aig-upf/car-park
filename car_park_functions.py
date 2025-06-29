@@ -409,7 +409,7 @@ def plot_model_tn_thDisc(loc_ar=.3, scale_ar=.05, loc_de=.8, scale_de=.1,thresh=
     ax[1].set_xlim([0,23.5])
     ax[1].set_ylim([ymin,ymax])
     ax[1].set_xlabel('hour', fontsize = fsize)
-    ax[1].set_ylabel('normalized occupation', fontsize = fsize)
+    ax[1].set_ylabel('normalized occupancy', fontsize = fsize)
     ax[1].tick_params(axis='both', which='major', labelsize=fsize)
 
     return fig
