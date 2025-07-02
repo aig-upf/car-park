@@ -21,11 +21,11 @@ set(h,'PaperPosition',[.6 0 20 20]);
 set(h,'PaperSize',[20 20]);
 FontSize = 18;
 
-for p = 1:numel(parksOK)
+for p = [2 1 3:numel(parksOK)]
     
     subplot(4,2,p)
 
-    binsize = 10;
+    binsize = 9;
     ymax = 50;
     max_reached = 0;
 
@@ -73,6 +73,7 @@ for p = 1:numel(parksOK)
     
     title(str_parksOK{p});
     set(gca,'ylim',[0 max([a1,a2,a3])]);
+    ylabel('num. days')
     fprintf('%s:\tmax reached %d days\n',parksOK{p},max_reached);
 
     bh= bar(b3,[a1;a2;a3]);
@@ -102,9 +103,17 @@ for p = 1:numel(parksOK)
         set(gca,'xtick',xt);
     end
     if p==1
-        hl = legend('WD','FR','WE','Capacity');
-        set(hl,'location','northeast');
+        hl = legend('Week Day (WD)','Friday (FR)','Weekend (WE)','Capacity');
+        set(hl,'location','northwest');
+        set(hl,'fontsize',6.5);
+        pos = get(hl, 'Position');
+        pos(1) = pos(1) + .36;
+        pos(2) = pos(2) + 0.06;
+        set(hl, 'Position', pos);
+    end
+    if p>6
+        xlabel('max. occupancy')
     end
 end
 
-saveas(h,'fig_Ns.pdf');
+saveas(h,'fig_Ns_rebuttal.pdf');
